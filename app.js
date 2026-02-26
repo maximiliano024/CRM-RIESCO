@@ -847,11 +847,11 @@ async function renderFiles(projectId) {
     empty.classList.add('hidden');
     grid.innerHTML = files.map(f => {
       const { icon, bg } = getFileIcon(f.name);
-      return `<div class="file-card" title="${escHtml(f.name)}">
+      return `<div class="file-card" title="${escHtml(f.name)}" onclick="downloadFile('${f.id}')" style="cursor:pointer;">
         <div class="file-icon" style="background:${bg}">${icon}</div>
         <div class="file-name">${escHtml(f.name)}</div>
         <div class="file-size">${formatSize(f.size)}</div>
-        <button class="file-delete can-edit" onclick="deleteFile('${f.id}')" title="Eliminar">×</button>
+        <button class="file-delete can-edit" onclick="event.stopPropagation(); deleteFile('${f.id}')" title="Eliminar">×</button>
       </div>`;
     }).join('');
   }
@@ -878,6 +878,16 @@ async function deleteFile(id) {
   await deleteFileById(id);
   renderFiles(APP.currentProjectId);
   showToast('Archivo eliminado', 'info');
+}
+
+async function downloadFile(id) {
+  const all = await getFiles();
+  const f = all.find(file => file.id === id);
+  if (!f) return;
+  const a = document.createElement('a');
+  a.href = f.dataUrl;
+  a.download = f.name;
+  a.click();
 }
 
 // ── CLIENTES ─────────────────────────────────────────────────
