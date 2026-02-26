@@ -1383,7 +1383,6 @@ function openBulkUploadModal() {
   $('#bulk-file-list').innerHTML = '';
   $('#bulk-progress-area').classList.add('hidden');
   $('#bulk-drop-zone').classList.remove('hidden');
-  $('#btn-bulk-submit').disabled = true;
   $('#modal-bulk-upload').classList.remove('hidden');
 }
 function closeBulkUploadModal() { $('#modal-bulk-upload').classList.add('hidden'); APP.bulkFiles = []; }
@@ -1395,7 +1394,6 @@ async function processBulkFiles(files) {
 
   $('#bulk-drop-zone').classList.add('hidden');
   $('#bulk-progress-area').classList.remove('hidden');
-  $('#btn-bulk-submit').disabled = true;
 
   const total = APP.bulkFiles.length;
   let done = 0;
@@ -1434,7 +1432,6 @@ async function processBulkFiles(files) {
     $('#bulk-progress-text').textContent = `Procesadas ${done} de ${total}`;
     updateBulkList();
   }
-  $('#btn-bulk-submit').disabled = false;
 }
 
 async function updateBulkList() {
