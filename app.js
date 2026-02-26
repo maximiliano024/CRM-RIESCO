@@ -230,6 +230,8 @@ function showView(viewId, title, category) {
     $('#nav-inmo-projects')?.classList.add('active');
   } else if (viewId === 'gastos-global' && category === 'inmobiliario') {
     $('#nav-inmo-gastos')?.classList.add('active');
+  } else if (viewId === 'tareas' && category === 'inmobiliario') {
+    $('#nav-inmo-tareas')?.classList.add('active');
   } else if (viewId === 'project-detail') {
     // keep whichever was previously active
   }
@@ -242,6 +244,7 @@ function showView(viewId, title, category) {
   if (viewId === 'cobranza') renderCobranza();
   if (viewId === 'clientes') renderClientes();
   if (viewId === 'admin') renderAdminPanel();
+  if (viewId === 'tareas') renderTareas(category);
 }
 
 // ── SIDEBAR COLLAPSIBLE GROUPS ────────────────────────────────
@@ -2219,6 +2222,177 @@ async function deleteCobro(id) {
   renderCobranza();
 }
 
+// ── TAREAS (INMOBILIARIO) ───────────────────────────────────
+APP.editingTareaId = null;
+
+async function renderTareas(category) {
+  let [tareas, projects, users] = await Promise.all([getTareas(), getProjects(), getUsers()]);
+
+  if (category) {
+    const projIds = projects.filter(p => p.category === category).map(p => p.id);
+    tareas = tareas.filter(t => projIds.includes(t.projectId));
+  }
+
+  const tbody = $('#tareas-table-body');
+  const empty = $('#tareas-empty');
+  const statusFilter = $('#tareas-filter-status').value;
+
+  if (statusFilter) {
+    tareas = tareas.filter(t => t.status === statusFilter);
+  }
+
+  if (tareas.length === 0) {
+    tbody.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+
+  tbody.innerHTML = tareas.map(t => {
+    const p = projects.find(proj => proj.id === t.projectId);
+    const u = users.find(usr => usr.id === t.userId);
+    const pName = p ? p.name : 'Proyecto Desconocido';
+    const uName = u ? u.name : 'Usuario Eliminado';
+
+    // Check if task is overdue
+    let isOverdue = false;
+    if (t.status !== 'completada' && t.dueDate) {
+      if (new Date(t.dueDate) < new Date(today())) isOverdue = true;
+    }
+
+    const badgeClass = t.status === 'completada' ? 'success' : isOverdue ? 'danger' : 'warning';
+    const rowClass = t.status === 'completada' ? 'opacity: 0.6;' : '';
+
+    return `<tr style="${rowClass}">
+      <td><span class="badge ${badgeClass}">${t.status}</span></td>
+      <td>${escHtml(t.description)}</td>
+      <td onclick="openProjectDetail('${t.projectId}')" style="cursor:pointer; font-weight: 500;">${escHtml(pName)}</td>
+      <td>${escHtml(uName)}</td>
+      <td>${formatDate(t.dueDate)}</td>
+      <td>
+        <div class="td-actions">
+          ${t.status !== 'completada' ? `<button class="btn btn-sm btn-ghost can-edit" onclick="completeTarea('${t.id}')">✓ Completar</button>` : `<button class="btn btn-sm btn-ghost can-edit" onclick="reopenTarea('${t.id}')">↻ Reabrir</button>`}
+          <button class="btn btn-sm btn-secondary can-edit" onclick="openTareaModal('${t.id}')">Editar</button>
+          <button class="btn btn-sm btn-danger can-edit" onclick="deleteTarea('${t.id}')">Eliminar</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function openTareaModal(id = null) {
+  APP.editingTareaId = id;
+  const modal = $('#modal-tarea');
+  const title = $('#modal-tarea-title');
+  const btn = $('#modal-tarea-save');
+
+  const descField = $('#tarea-description');
+  const dueField = $('#tarea-due-date');
+
+  const [projects, users, tareas] = await Promise.all([getProjects(), getUsers(), getTareas()]);
+
+  // Load project dropdown (only inmo projects if filtered, otherwise all)
+  const projSelect = $('#tarea-proyecto');
+  const filteredProjects = APP.currentCategory ? projects.filter(p => p.category === APP.currentCategory) : projects;
+  projSelect.innerHTML = filteredProjects.map(p => `<option value="${p.id}">${escHtml(p.name)}</option>`).join('');
+
+  // Load users dropdown
+  const userSelect = $('#tarea-asignado');
+  userSelect.innerHTML = users.map(u => `<option value="${u.id}">${escHtml(u.name)}</option>`).join('');
+
+  if (id) {
+    const t = tareas.find(ta => ta.id === id);
+    if (!t) return;
+    title.textContent = 'Editar Tarea';
+    btn.textContent = 'Guardar Cambios';
+    if (!filteredProjects.find(p => p.id === t.projectId)) {
+      projSelect.innerHTML += `<option value="${t.projectId}" selected>${escHtml(projects.find(p => p.id === t.projectId)?.name || 'Desconocido')}</option>`;
+    } else {
+      projSelect.value = t.projectId;
+    }
+    descField.value = t.description;
+    dueField.value = t.dueDate || today();
+    userSelect.value = t.userId || '';
+  } else {
+    title.textContent = 'Nueva Tarea';
+    btn.textContent = 'Crear Tarea';
+    descField.value = '';
+    dueField.value = today();
+    userSelect.value = getCurrentUser()?.id || '';
+  }
+
+  modal.classList.remove('hidden');
+  descField.focus();
+}
+
+function closeTareaModal() {
+  $('#modal-tarea').classList.add('hidden');
+  APP.editingTareaId = null;
+}
+
+async function saveTarea() {
+  const projectId = $('#tarea-proyecto').value;
+  const description = $('#tarea-description').value.trim();
+  const userId = $('#tarea-asignado').value;
+  const dueDate = $('#tarea-due-date').value;
+
+  if (!projectId) { showToast('Selecciona un proyecto', 'error'); return; }
+  if (!description) { showToast('Ingresa la descripción', 'error'); return; }
+  if (!userId) { showToast('Debes asignar la tarea a una persona', 'error'); return; }
+  if (!dueDate) { showToast('Selecciona la fecha límite', 'error'); return; }
+
+  let status = 'pendiente';
+  if (APP.editingTareaId) {
+    const all = await getTareas();
+    const existing = all.find(t => t.id === APP.editingTareaId);
+    if (existing) status = existing.status;
+  }
+
+  const t = {
+    id: APP.editingTareaId || uid(),
+    projectId,
+    userId,
+    description,
+    dueDate,
+    status,
+    createdAt: APP.editingTareaId ? undefined : new Date().toISOString(),
+  };
+
+  await upsertTarea(t);
+  showToast(APP.editingTareaId ? 'Tarea actualizada' : 'Tarea creada', 'success');
+  closeTareaModal();
+  renderTareas(APP.currentCategory);
+}
+
+async function deleteTarea(id) {
+  if (!confirm('¿Seguro que deseas eliminar esta tarea?')) return;
+  await deleteTareaById(id);
+  showToast('Tarea eliminada', 'info');
+  renderTareas(APP.currentCategory);
+}
+
+async function completeTarea(id) {
+  const all = await getTareas();
+  const t = all.find(ta => ta.id === id);
+  if (t) {
+    t.status = 'completada';
+    await upsertTarea(t);
+    showToast('Tarea completada 🎉', 'success');
+    renderTareas(APP.currentCategory);
+  }
+}
+
+async function reopenTarea(id) {
+  const all = await getTareas();
+  const t = all.find(ta => ta.id === id);
+  if (t) {
+    t.status = 'pendiente';
+    await upsertTarea(t);
+    showToast('Tarea reabierta', 'info');
+    renderTareas(APP.currentCategory);
+  }
+}
+
 // ── INIT ──────────────────────────────────────────────────────
 async function init() {
   await seedAdmin();
@@ -2394,7 +2568,13 @@ async function init() {
     renderCobranzaCobros(cobros, projects);
   });
 
-  // Render pending badge on boot — removed (no review flow)
+  // Tareas
+  $('#btn-add-tarea').addEventListener('click', () => openTareaModal());
+  $('#modal-tarea-close').addEventListener('click', closeTareaModal);
+  $('#modal-tarea-cancel').addEventListener('click', closeTareaModal);
+  $('#modal-tarea-save').addEventListener('click', saveTarea);
+  $('#modal-tarea').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeTareaModal(); });
+  $('#tareas-filter-status').addEventListener('change', () => renderTareas(APP.currentCategory));
 }
 
 document.addEventListener('DOMContentLoaded', init);

@@ -258,6 +258,35 @@ async function deleteFileById(id) {
     if (error) console.error('deleteFileById:', error);
 }
 
+// ── TAREAS ──────────────────────────────────────────────────
+function rowToTarea(r) {
+    return {
+        id: r.id, projectId: r.project_id, userId: r.user_id,
+        description: r.description, dueDate: r.due_date,
+        status: r.status || 'pendiente', createdAt: r.created_at,
+    };
+}
+function tareaToRow(t) {
+    return {
+        id: t.id, project_id: t.projectId, user_id: t.userId,
+        description: t.description, due_date: t.dueDate,
+        status: t.status || 'pendiente',
+    };
+}
+async function getTareas() {
+    const { data, error } = await _supabase.from('tareas').select('*').order('due_date', { ascending: true });
+    if (error) { console.error('getTareas:', error); return []; }
+    return (data || []).map(rowToTarea);
+}
+async function upsertTarea(t) {
+    const { error } = await _supabase.from('tareas').upsert(tareaToRow(t), { onConflict: 'id' });
+    if (error) console.error('upsertTarea:', error);
+}
+async function deleteTareaById(id) {
+    const { error } = await _supabase.from('tareas').delete().eq('id', id);
+    if (error) console.error('deleteTareaById:', error);
+}
+
 // ── USERS ─────────────────────────────────────────────────────
 async function getUsers() {
     const { data, error } = await _supabase.from('users').select('*').order('created_at', { ascending: true });

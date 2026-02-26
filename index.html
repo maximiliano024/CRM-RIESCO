@@ -118,6 +118,13 @@
               </svg>
               <span>Proyectos</span>
             </a>
+            <a href="#" class="nav-item nav-sub" data-view="tareas" data-category="inmobiliario" id="nav-inmo-tareas">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 11 12 14 22 4"></polyline>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+              </svg>
+              <span>Tareas</span>
+            </a>
           </div>
         </div>
 
@@ -763,6 +770,52 @@
         </div>
       </section>
 
+      <!-- ── VIEW: TAREAS ── -->
+      <section class="view hidden" id="view-tareas">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Listado de Tareas</h2>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <select class="filter-select" id="tareas-filter-status">
+                <option value="">Todas las tareas</option>
+                <option value="pendiente" selected>Pendientes</option>
+                <option value="completada">Completadas</option>
+              </select>
+              <button class="btn btn-primary btn-sm can-edit" id="btn-add-tarea">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  style="width:14px;height:14px">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                Nueva Tarea
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Estado</th>
+                  <th>Descripción</th>
+                  <th>Proyecto</th>
+                  <th>Asignado a</th>
+                  <th>Fecha Límite</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tareas-table-body"></tbody>
+            </table>
+            <div class="empty-state hidden" id="tareas-empty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <polyline points="9 11 12 14 22 4"></polyline>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+              </svg>
+              <p>No hay tareas registradas.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ── VIEW: CLIENTES ── -->
       <section class="view hidden" id="view-clientes">
         <div class="clientes-header">
@@ -1160,6 +1213,39 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" id="modal-bulk-cancel">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: TAREA -->
+  <div class="modal-overlay hidden" id="modal-tarea">
+    <div class="modal w-sm">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-tarea-title">Nueva Tarea</h2>
+        <button class="modal-close" id="modal-tarea-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="tarea-proyecto">Proyecto Relacionado *</label>
+          <select class="form-input" id="tarea-proyecto"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="tarea-description">Descripción de la Tarea *</label>
+          <textarea class="form-input" id="tarea-description" rows="3"
+            placeholder="Ej: Redactar escritura de compraventa..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="tarea-asignado">Asignar a *</label>
+          <select class="form-input" id="tarea-asignado"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="tarea-due-date">Fecha Límite *</label>
+          <input type="date" class="form-input" id="tarea-due-date" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="modal-tarea-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="modal-tarea-save">Guardar Tarea</button>
       </div>
     </div>
   </div>
