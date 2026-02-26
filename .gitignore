@@ -1,0 +1,12 @@
+# Sistema
+.DS_Store
+Thumbs.db
+*.log
+
+# Editor
+.vscode/
+.idea/
+
+# No subir datos sensibles
+# config.js contiene las credenciales de Supabase — NO la excluimos
+# porque Netlify necesita leerla. Las claves anon son públicas por diseño.

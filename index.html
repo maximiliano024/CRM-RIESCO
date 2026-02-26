@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Riesco & Asociados — CRM</title>
+  <meta name="description" content="Plataforma CRM para gestión de proyectos — Riesco y Asociados" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <!-- ══════════════════════════════════════════
+       LOGIN SCREEN
+  ══════════════════════════════════════════ -->
+  <div class="login-screen" id="login-screen">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="logo-icon">R&A</div>
+        <div class="login-logo-text">
+          <span class="login-brand">Riesco & Asociados</span>
+          <span class="login-sub">Plataforma CRM</span>
+        </div>
+      </div>
+      <h1 class="login-title">Iniciar Sesión</h1>
+      <div class="form-group">
+        <label class="form-label" for="login-user">Usuario</label>
+        <input type="text" class="form-input" id="login-user" placeholder="Ingresa tu usuario"
+          autocomplete="username" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="login-pass">Contraseña</label>
+        <input type="password" class="form-input" id="login-pass" placeholder="••••••••"
+          autocomplete="current-password" />
+      </div>
+      <div class="login-error hidden" id="login-error">Usuario o contraseña incorrectos</div>
+      <button class="btn btn-primary btn-full" id="btn-login">Ingresar</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       APP SHELL (hidden until logged in)
+  ══════════════════════════════════════════ -->
+  <div class="app-shell hidden" id="app-shell">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <span class="sidebar-brand">Riesco &amp; Asociados</span>
+      </div>
+
+      <nav class="sidebar-nav" id="sidebar-nav">
+
+        <!-- Dashboard -->
+        <a href="#" class="nav-item" data-view="dashboard" id="nav-dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7" />
+            <rect x="14" y="3" width="7" height="7" />
+            <rect x="14" y="14" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" />
+          </svg>
+          <span>Dashboard</span>
+        </a>
+
+        <!-- LEGAL GROUP -->
+        <div class="nav-group" id="nav-group-legal">
+          <button class="nav-group-header" data-group="legal">
+            <span class="nav-group-icon legal-icon">⚖️</span>
+            <span class="nav-group-label">Legal</span>
+            <svg class="nav-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+          <div class="nav-group-items" id="group-items-legal">
+            <a href="#" class="nav-item nav-sub" data-view="pipeline" data-category="legal" id="nav-legal-pipeline">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+              </svg>
+              <span>Pipeline</span>
+            </a>
+            <a href="#" class="nav-item nav-sub" data-view="projects" data-category="legal" id="nav-legal-projects">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+              </svg>
+              <span>Proyectos</span>
+            </a>
+          </div>
+        </div>
+
+
+        <!-- INMOBILIARIO GROUP -->
+        <div class="nav-group" id="nav-group-inmobiliario">
+          <button class="nav-group-header" data-group="inmobiliario">
+            <span class="nav-group-icon inmobiliario-icon">🏢</span>
+            <span class="nav-group-label">Inmobiliario</span>
+            <svg class="nav-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+          <div class="nav-group-items" id="group-items-inmobiliario">
+            <a href="#" class="nav-item nav-sub" data-view="pipeline" data-category="inmobiliario"
+              id="nav-inmo-pipeline">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+              </svg>
+              <span>Pipeline</span>
+            </a>
+            <a href="#" class="nav-item nav-sub" data-view="projects" data-category="inmobiliario"
+              id="nav-inmo-projects">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+              </svg>
+              <span>Proyectos</span>
+            </a>
+          </div>
+        </div>
+
+
+        <!-- TOP-LEVEL: CLIENTES -->
+        <a href="#" class="nav-item" data-view="clientes" id="nav-clientes">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          <span>Clientes</span>
+        </a>
+
+        <!-- TOP-LEVEL: GASTOS REEMBOLSABLES -->
+        <a href="#" class="nav-item" data-view="gastos-global" id="nav-gastos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="1" x2="12" y2="23" />
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+          </svg>
+          <span>Gastos Reembolsables</span>
+        </a>
+
+        <!-- TOP-LEVEL: COBRANZA -->
+        <a href="#" class="nav-item" data-view="cobranza" id="nav-cobranza">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="5" width="20" height="14" rx="2" />
+            <line x1="2" y1="10" x2="22" y2="10" />
+          </svg>
+          <span>Cobranza</span>
+        </a>
+
+        <!-- ADMIN -->
+        <a href="#" class="nav-item nav-admin-only" data-view="admin" id="nav-admin">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          <span>Administrador</span>
+        </a>
+
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-chip" id="sidebar-user-chip">
+          <div class="user-avatar" id="sidebar-avatar">RY</div>
+          <div class="user-info">
+            <span class="user-name" id="sidebar-user-name">Cargando…</span>
+            <span class="user-role" id="sidebar-user-role">—</span>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-sm btn-full logout-btn" id="btn-logout">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          Cerrar Sesión
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main-content" id="main-content">
+
+      <!-- TOP HEADER -->
+      <header class="top-header">
+        <div class="header-left">
+          <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Menú">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+          <div>
+            <h1 class="page-title" id="page-title">Dashboard</h1>
+            <span class="page-category-label" id="page-category-label"></span>
+          </div>
+        </div>
+        <div class="header-right">
+          <button class="btn btn-primary can-edit" id="btn-new-project">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Nuevo Proyecto
+          </button>
+        </div>
+      </header>
+
+      <!-- ── VIEW: DASHBOARD ── -->
+      <section class="view" id="view-dashboard">
+        <div class="dashboard-categories">
+          <div class="category-section">
+            <div class="category-section-header">
+              <span class="cat-badge legal">⚖️ Legal</span>
+              <span class="cat-total" id="dash-legal-total">0 proyectos</span>
+            </div>
+            <div class="stats-grid">
+              <div class="stat-card" data-stage="en-contacto" data-cat="legal">
+                <div class="stat-icon" style="--c:#3b82f6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2">
+                    <path
+                      d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.19 12 19.79 19.79 0 0 1 1.08 3.41 2 2 0 0 1 3.05 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16z" />
+                  </svg></div>
+                <div class="stat-body">
+                  <div class="stat-label">En Contacto</div>
+                  <div class="stat-value" id="stat-legal-en-contacto">0</div>
+                </div>
+                <div class="stat-bar" style="--c:#3b82f6"></div>
+              </div>
+              <div class="stat-card" data-stage="evaluacion" data-cat="legal">
+                <div class="stat-icon" style="--c:#8b5cf6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg></div>
+                <div class="stat-body">
+                  <div class="stat-label">Evaluación</div>
+                  <div class="stat-value" id="stat-legal-evaluacion">0</div>
+                </div>
+                <div class="stat-bar" style="--c:#8b5cf6"></div>
+              </div>
+              <div class="stat-card" data-stage="en-negociacion" data-cat="legal">
+                <div class="stat-icon" style="--c:#f59e0b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2">
+                    <line x1="12" y1="1" x2="12" y2="23" />
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                  </svg></div>
+                <div class="stat-body">
+                  <div class="stat-label">En Negociación</div>
+                  <div class="stat-value" id="stat-legal-en-negociacion">0</div>
+                </div>
+                <div class="stat-bar" style="--c:#f59e0b"></div>
+              </div>
+              <div class="stat-card" data-stage="cierre" data-cat="legal">
+                <div class="stat-icon" style="--c:#10b981"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg></div>
+                <div class="stat-body">
+                  <div class="stat-label">Cierre</div>
+                  <div class="stat-value" id="stat-legal-cierre">0</div>
+                </div>
+                <div class="stat-bar" style="--c:#10b981"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="category-section">
+            <div class="category-section-header">
+              <span class="cat-badge inmobiliario">🏢 Inmobiliario</span>
+              <span class="cat-total" id="dash-inmo-total">0 proyectos</span>
+            </div>
+            <div class="stats-grid">
+              <div class="stat-card" data-stage="en-contacto" data-cat="inmobiliario">
+                <div class="stat-icon" style="--c:#3b82f6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2">
+                    <path
+                      d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.19 12 19.79 19.79 0 0 1 1.08 3.41 2 2 0 0 1 3.05 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16z" />
+                  </svg></div>
+                <div class="stat-body">
+                  <div class="stat-label">En Contacto</div>
+                  <div class="stat-value" id="stat-inmo-en-contacto">0</div>
+                </div>
+                <div class="stat-bar" style="--c:#3b82f6"></div>
+              </div>
+              <div class="stat-card" data-stage="evaluacion" data-cat="inmobiliario">
+                <div class="stat-icon" style="--c:#8b5cf6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg></div>
+                <div class="stat-body">
+                  <div class="stat-label">Evaluación</div>
+                  <div class="stat-value" id="stat-inmo-evaluacion">0</div>
+                </div>
+                <div class="stat-bar" style="--c:#8b5cf6"></div>
+              </div>
+              <div class="stat-card" data-stage="en-negociacion" data-cat="inmobiliario">
+                <div class="stat-icon" style="--c:#f59e0b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2">
+                    <line x1="12" y1="1" x2="12" y2="23" />
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                  </svg></div>
+                <div class="stat-body">
+                  <div class="stat-label">En Negociación</div>
+                  <div class="stat-value" id="stat-inmo-en-negociacion">0</div>
+                </div>
+                <div class="stat-bar" style="--c:#f59e0b"></div>
+              </div>
+              <div class="stat-card" data-stage="cierre" data-cat="inmobiliario">
+                <div class="stat-icon" style="--c:#10b981"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg></div>
+                <div class="stat-body">
+                  <div class="stat-label">Cierre</div>
+                  <div class="stat-value" id="stat-inmo-cierre">0</div>
+                </div>
+                <div class="stat-bar" style="--c:#10b981"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Proyectos Recientes</h2>
+            </div>
+            <div class="card-body" id="recent-projects-list">
+              <div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                </svg>
+                <p>No hay proyectos aún.</p>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Distribución del Pipeline</h2>
+            </div>
+            <div class="card-body chart-container" style="position:relative">
+              <canvas id="pipeline-chart"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── VIEW: PIPELINE ── -->
+      <section class="view hidden" id="view-pipeline">
+        <div class="pipeline-board" id="pipeline-board">
+          <div class="pipeline-col" data-stage="en-contacto">
+            <div class="pipeline-col-header"><span class="stage-dot" style="--c:#3b82f6"></span><span
+                class="stage-name">En Contacto</span><span class="stage-count" id="count-en-contacto">0</span></div>
+            <div class="pipeline-cards" id="col-en-contacto" data-stage="en-contacto"></div>
+            <button class="add-card-btn can-edit" data-stage="en-contacto">+ Agregar Proyecto</button>
+          </div>
+          <div class="pipeline-col" data-stage="evaluacion">
+            <div class="pipeline-col-header"><span class="stage-dot" style="--c:#8b5cf6"></span><span
+                class="stage-name">Evaluación</span><span class="stage-count" id="count-evaluacion">0</span></div>
+            <div class="pipeline-cards" id="col-evaluacion" data-stage="evaluacion"></div>
+            <button class="add-card-btn can-edit" data-stage="evaluacion">+ Agregar Proyecto</button>
+          </div>
+          <div class="pipeline-col" data-stage="en-negociacion">
+            <div class="pipeline-col-header"><span class="stage-dot" style="--c:#f59e0b"></span><span
+                class="stage-name">En Negociación</span><span class="stage-count" id="count-en-negociacion">0</span>
+            </div>
+            <div class="pipeline-cards" id="col-en-negociacion" data-stage="en-negociacion"></div>
+            <button class="add-card-btn can-edit" data-stage="en-negociacion">+ Agregar Proyecto</button>
+          </div>
+          <div class="pipeline-col" data-stage="cierre">
+            <div class="pipeline-col-header"><span class="stage-dot" style="--c:#10b981"></span><span
+                class="stage-name">Cierre</span><span class="stage-count" id="count-cierre">0</span></div>
+            <div class="pipeline-cards" id="col-cierre" data-stage="cierre"></div>
+            <button class="add-card-btn can-edit" data-stage="cierre">+ Agregar Proyecto</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── VIEW: PROJECTS ── -->
+      <section class="view hidden" id="view-projects">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Proyectos</h2>
+            <input type="text" class="search-input" id="project-search" placeholder="Buscar proyectos…" />
+          </div>
+          <div class="card-body">
+            <table class="data-table" id="projects-table">
+              <thead>
+                <tr>
+                  <th>Proyecto</th>
+                  <th>Cliente</th>
+                  <th>Categoría</th>
+                  <th>Etapa</th>
+                  <th>Valor</th>
+                  <th>Fecha</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="projects-table-body"></tbody>
+            </table>
+            <div class="empty-state hidden" id="projects-empty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+              </svg>
+              <p>No hay proyectos en esta categoría.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── VIEW: PROJECT DETAIL ── -->
+      <section class="view hidden" id="view-project-detail">
+        <button class="btn btn-ghost back-btn" id="btn-back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>Volver
+        </button>
+        <div class="project-hero">
+          <div class="project-hero-info">
+            <div class="hero-badges">
+              <span class="stage-badge" id="detail-stage-badge">En Contacto</span>
+              <span class="cat-badge" id="detail-cat-badge">Legal</span>
+            </div>
+            <h2 class="project-hero-name" id="detail-project-name">Proyecto</h2>
+            <p class="project-hero-client" id="detail-project-client">Cliente</p>
+            <div class="project-hero-meta">
+              <span id="detail-project-value"></span>
+              <span id="detail-project-date"></span>
+            </div>
+          </div>
+          <div class="project-hero-actions">
+            <button class="btn btn-secondary can-edit" id="btn-edit-project">Editar Proyecto</button>
+            <button class="btn btn-danger can-edit" id="btn-delete-project">Eliminar</button>
+          </div>
+        </div>
+        <div class="tabs-container">
+          <div class="tabs-nav">
+            <button class="tab-btn active" data-tab="tab-resumen">Resumen</button>
+            <button class="tab-btn" data-tab="tab-archivos">Archivos</button>
+            <button class="tab-btn" data-tab="tab-comentarios">Comentarios</button>
+            <button class="tab-btn" data-tab="tab-gastos">Gastos Reembolsables</button>
+          </div>
+          <!-- Tab Resumen -->
+          <div class="tab-content active" id="tab-resumen">
+            <div class="tab-grid">
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">Información</h3>
+                </div>
+                <div class="card-body">
+                  <div class="info-list" id="detail-info-list"></div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">Ubicación</h3>
+                  <button class="btn btn-sm btn-secondary can-edit" id="btn-edit-location">Editar Ubicación</button>
+                </div>
+                <div class="card-body p0">
+                  <div id="project-map" style="height:300px;border-radius:0 0 12px 12px;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Tab Archivos -->
+          <div class="tab-content hidden" id="tab-archivos">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Archivos Adjuntos</h3>
+                <label class="btn btn-primary btn-sm can-edit" for="file-upload-input">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                  </svg>Subir Archivo
+                </label>
+                <input type="file" id="file-upload-input" multiple style="display:none" />
+              </div>
+              <div class="card-body">
+                <div class="files-grid" id="files-grid">
+                  <div class="empty-state" id="files-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="1.5">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                    <p>No hay archivos adjuntos.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Tab Comentarios -->
+          <div class="tab-content hidden" id="tab-comentarios">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Comentarios</h3>
+              </div>
+              <div class="card-body">
+                <div class="comments-list" id="comments-list">
+                  <div class="empty-state" id="comments-empty"><svg viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="1.5">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                    <p>No hay comentarios aún.</p>
+                  </div>
+                </div>
+                <div class="comment-form">
+                  <textarea class="comment-input" id="comment-input" placeholder="Escribe un comentario…"
+                    rows="3"></textarea>
+                  <button class="btn btn-primary" id="btn-add-comment">Agregar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Tab Gastos -->
+          <div class="tab-content hidden" id="tab-gastos">
+            <div class="gastos-summary-bar">
+              <div class="gasto-summary-item"><span class="gasto-summary-label">Total Gastos</span><span
+                  class="gasto-summary-value" id="gastos-total">$0</span></div>
+              <div class="gasto-summary-item"><span class="gasto-summary-label">Cantidad</span><span
+                  class="gasto-summary-value" id="gastos-count">0</span></div>
+              <button class="btn btn-primary btn-sm can-edit" id="btn-add-gasto">+ Agregar Gasto</button>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Registro de Gastos</h3>
+                <select class="filter-select" id="gasto-filter-cat">
+                  <option value="">Todas las categorías</option>
+                  <option value="Transporte">Transporte</option>
+                  <option value="Alimentación">Alimentación</option>
+                  <option value="Alojamiento">Alojamiento</option>
+                  <option value="Materiales">Materiales</option>
+                  <option value="Servicios">Servicios</option>
+                  <option value="Otro">Otro</option>
+                </select>
+                <button class="btn btn-sm btn-ghost" id="btn-export-gastos">Exportar CSV</button>
+              </div>
+              <div class="card-body">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Descripción</th>
+                      <th>Categoría</th>
+                      <th>Monto</th>
+                      <th>Comprobante</th>
+                      <th>Boleta</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="gastos-table-body"></tbody>
+                </table>
+                <div class="empty-state hidden" id="gastos-empty"><svg viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="1.5">
+                    <line x1="12" y1="1" x2="12" y2="23" />
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                  </svg>
+                  <p>No hay gastos registrados.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── VIEW: GASTOS GLOBAL ── -->
+      <section class="view hidden" id="view-gastos-global">
+        <!-- Summary bar -->
+        <div class="gastos-global-summary" id="gg-summary">
+          <div class="gasto-summary-item"><span class="gasto-summary-label">Total Categoría</span><span
+              class="gasto-summary-value" id="gg-total">$0</span></div>
+          <div class="gasto-summary-item"><span class="gasto-summary-label">Gastos Registrados</span><span
+              class="gasto-summary-value" id="gg-count">0</span></div>
+          <div class="gasto-summary-item"><span class="gasto-summary-label">Proyectos con Gastos</span><span
+              class="gasto-summary-value" id="gg-proj-count">0</span></div>
+          <div class="gg-actions">
+            <select class="filter-select" id="gg-filter-project">
+              <option value="">Todos los proyectos</option>
+            </select>
+            <select class="filter-select" id="gg-filter-cat">
+              <option value="">Todas las categorías</option>
+              <option value="Transporte">Transporte</option>
+              <option value="Alimentación">Alimentación</option>
+              <option value="Alojamiento">Alojamiento</option>
+              <option value="Materiales">Materiales</option>
+              <option value="Servicios">Servicios</option>
+              <option value="Otro">Otro</option>
+            </select>
+            <button class="btn btn-primary btn-sm can-edit" id="btn-gg-add-gasto">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>Agregar Gasto
+            </button>
+            <button class="btn btn-sm btn-secondary can-edit" id="btn-gg-bulk-upload">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                style="width:14px;height:14px">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              Subir Boletas
+            </button>
+            <button class="btn btn-sm btn-ghost" id="btn-gg-export">Exportar CSV</button>
+          </div>
+        </div>
+        <!-- Table -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title" id="gg-table-title">Todos los Gastos</h2>
+          </div>
+          <div class="card-body">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Proyecto</th>
+                  <th>Fecha</th>
+                  <th>Descripción</th>
+                  <th>Categoría</th>
+                  <th>Monto</th>
+                  <th>Comprobante</th>
+                  <th>Boleta</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="gg-table-body"></tbody>
+            </table>
+            <div class="empty-state hidden" id="gg-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.5">
+                <line x1="12" y1="1" x2="12" y2="23" />
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              </svg>
+              <p>No hay gastos registrados en esta categoría.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── VIEW: COBRANZA ── -->
+      <section class="view hidden" id="view-cobranza">
+        <!-- Cards resumen -->
+        <div class="cob-summary" id="cob-summary">
+          <div class="cob-card cob-card-pending">
+            <div class="cob-card-label">Por Cobrar (gastos)</div>
+            <div class="cob-card-value" id="cob-gastos-pending">$0</div>
+          </div>
+          <div class="cob-card cob-card-done">
+            <div class="cob-card-label">Cobrado (gastos)</div>
+            <div class="cob-card-value" id="cob-gastos-done">$0</div>
+          </div>
+          <div class="cob-card cob-card-projects-pending">
+            <div class="cob-card-label">Cobros Proyectos Pendientes</div>
+            <div class="cob-card-value" id="cob-projects-pending">$0</div>
+          </div>
+          <div class="cob-card cob-card-projects-done">
+            <div class="cob-card-label">Cobros Proyectos Pagados</div>
+            <div class="cob-card-value" id="cob-projects-done">$0</div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="cob-tabs">
+          <button class="cob-tab active" id="cob-tab-gastos" onclick="switchCobTab('gastos')">Gastos
+            Reembolsables</button>
+          <button class="cob-tab" id="cob-tab-cobros" onclick="switchCobTab('cobros')">Cobros de Proyectos</button>
+        </div>
+
+        <!-- TAB: Gastos Reembolsables -->
+        <div id="cob-panel-gastos">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Gastos Reembolsables</h2>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <select class="filter-select" id="cob-filter-cobrado">
+                  <option value="">Todos</option>
+                  <option value="false">Por Cobrar</option>
+                  <option value="true">Cobrados</option>
+                </select>
+                <select class="filter-select" id="cob-filter-project">
+                  <option value="">Todos los proyectos</option>
+                </select>
+              </div>
+            </div>
+            <div class="card-body">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Proyecto</th>
+                    <th>Mes</th>
+                    <th>Gastos</th>
+                    <th>Monto Total</th>
+                    <th>Estado</th>
+                    <th>Fecha Cobro</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="cob-gastos-body"></tbody>
+              </table>
+              <div class="empty-state hidden" id="cob-gastos-empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <line x1="12" y1="1" x2="12" y2="23" />
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                </svg>
+                <p>No hay gastos en este filtro.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: Cobros de Proyectos -->
+        <div id="cob-panel-cobros" class="hidden">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Cobros de Proyectos</h2>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <select class="filter-select" id="cob-filter-status">
+                  <option value="">Todos los estados</option>
+                  <option value="pendiente">Pendiente</option>
+                  <option value="pagado">Pagado</option>
+                  <option value="vencido">Vencido</option>
+                </select>
+                <button class="btn btn-primary btn-sm can-edit" id="btn-add-cobro">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    style="width:14px;height:14px">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                  Nuevo Cobro
+                </button>
+              </div>
+            </div>
+            <div class="card-body">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Proyecto</th>
+                    <th>Concepto</th>
+                    <th>Monto</th>
+                    <th>Vencimiento</th>
+                    <th>Estado</th>
+                    <th>Fecha Pago</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="cob-cobros-body"></tbody>
+              </table>
+              <div class="empty-state hidden" id="cob-cobros-empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="2" y="5" width="20" height="14" rx="2" />
+                  <line x1="2" y1="10" x2="22" y2="10" />
+                </svg>
+                <p>No hay cobros registrados aún.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── VIEW: CLIENTES ── -->
+      <section class="view hidden" id="view-clientes">
+        <div class="clientes-header">
+          <div class="clientes-stats" id="clientes-stats"></div>
+          <button class="btn btn-primary can-edit" id="btn-add-client">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Nuevo Cliente
+          </button>
+        </div>
+        <div class="clientes-grid" id="clientes-grid"></div>
+        <div class="empty-state hidden" id="clientes-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          <p>No hay clientes registrados.</p>
+          <button class="btn btn-primary can-edit" onclick="openClientModal()">Agregar primer cliente</button>
+        </div>
+      </section>
+
+      <!-- ── VIEW: CLIENT DETAIL ── -->
+      <section class="view hidden" id="view-client-detail">
+        <button class="btn btn-ghost back-btn" id="btn-client-back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>Volver
+        </button>
+        <div class="client-hero" id="client-hero">
+          <div class="client-hero-avatar" id="client-hero-avatar">—</div>
+          <div class="client-hero-info">
+            <h2 class="client-hero-name" id="client-hero-name">Cliente</h2>
+            <div class="client-hero-meta" id="client-hero-meta"></div>
+          </div>
+          <div class="client-hero-actions">
+            <button class="btn btn-secondary can-edit" id="btn-edit-client">Editar</button>
+            <button class="btn btn-danger can-edit" id="btn-delete-client">Eliminar</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Proyectos del Cliente</h3>
+            <button class="btn btn-primary btn-sm can-edit" id="btn-client-new-project">+ Nuevo Proyecto</button>
+          </div>
+          <div class="card-body">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Proyecto</th>
+                  <th>Categoría</th>
+                  <th>Etapa</th>
+                  <th>Valor</th>
+                  <th>Fecha</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="client-projects-body"></tbody>
+            </table>
+            <div class="empty-state hidden" id="client-projects-empty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+              </svg>
+              <p>Este cliente no tiene proyectos aún.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── VIEW: ADMIN ── -->
+      <section class="view hidden" id="view-admin">
+        <div class="admin-grid">
+          <!-- Users table -->
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Usuarios del Sistema</h2>
+              <button class="btn btn-primary btn-sm" id="btn-add-user">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                Nuevo Usuario
+              </button>
+            </div>
+            <div class="card-body">
+              <table class="data-table" id="users-table">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Usuario</th>
+                    <th>Rol</th>
+                    <th>Acceso</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="users-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+          <!-- Info panel -->
+          <div class="card admin-info-card">
+            <div class="card-header">
+              <h3 class="card-title">Información del Sistema</h3>
+            </div>
+            <div class="card-body">
+              <div class="info-list" id="admin-sys-info"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div><!-- /app-shell -->
+
+
+  <!-- ══════════════════════════════════════════
+       MODALS
+  ══════════════════════════════════════════ -->
+
+  <!-- MODAL: PROYECTO -->
+  <div class="modal-overlay hidden" id="modal-project">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-project-title">Nuevo Proyecto</h2>
+        <button class="modal-close" id="modal-project-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label" for="input-name">Nombre *</label><input type="text"
+              class="form-input" id="input-name" placeholder="Ej: Torre Costanera" /></div>
+          <div class="form-group"><label class="form-label" for="input-client">Empresa / Cliente *</label>
+            <select class="form-input" id="input-client">
+              <option value="">— Seleccionar empresa —</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label" for="input-category">Categoría</label>
+            <select class="form-input" id="input-category">
+              <option value="legal">⚖️ Legal</option>
+              <option value="inmobiliario">🏢 Inmobiliario</option>
+            </select>
+          </div>
+          <div class="form-group hidden" id="group-subcategory"><label class="form-label" for="input-subcategory">Área
+              Inmobiliaria</label>
+            <select class="form-input" id="input-subcategory">
+              <option value="">— Seleccionar Área —</option>
+              <option value="desarrollo">🏗 Desarrollo</option>
+              <option value="corretaje">🏠 Corretaje</option>
+              <option value="energia">⚡ Energía</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label" for="input-stage">Etapa</label>
+            <select class="form-input" id="input-stage">
+              <option value="en-contacto">En Contacto</option>
+              <option value="evaluacion">Evaluación</option>
+              <option value="en-negociacion">En Negociación</option>
+              <option value="cierre">Cierre</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label" for="input-value">Valor (CLP)</label><input type="number"
+              class="form-input" id="input-value" placeholder="0" /></div>
+          <div class="form-group"><label class="form-label" for="input-date">Fecha de Inicio</label><input type="date"
+              class="form-input" id="input-date" /></div>
+          <div class="form-group"><label class="form-label" for="input-responsible">Responsable</label><input
+              type="text" class="form-input" id="input-responsible" placeholder="Ej: Juan Pérez" /></div>
+          <div class="form-group full-width"><label class="form-label" for="input-address">Dirección</label><input
+              type="text" class="form-input" id="input-address" placeholder="Ej: Av. Providencia 1234, Santiago" />
+          </div>
+          <div class="form-group full-width"><label class="form-label"
+              for="input-description">Descripción</label><textarea class="form-input" id="input-description" rows="3"
+              placeholder="Descripción del proyecto…"></textarea></div>
+          <div class="form-group full-width">
+            <label class="form-label">Foto de Portada</label>
+            <div class="receipt-upload-area" id="cover-upload-area">
+              <input type="file" id="cover-file-input" accept="image/*" style="display:none" />
+              <div class="receipt-placeholder" id="cover-placeholder">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21 15 16 10 5 21" />
+                </svg>
+                <p>Subir foto de portada</p>
+                <span>JPG, PNG — click o arrastra</span>
+                <button type="button" class="btn btn-sm btn-secondary" id="btn-select-cover">Seleccionar imagen</button>
+              </div>
+              <div class="receipt-preview hidden" id="cover-preview">
+                <img id="cover-img" src="" alt="Portada"
+                  style="max-height:160px;object-fit:cover;width:100%;border-radius:6px" />
+                <button type="button" class="receipt-remove" id="btn-remove-cover" title="Quitar imagen">×</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="modal-project-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="modal-project-save">Guardar</button>
+      </div>
+    </div>
+  </div>
+  <!-- MODAL: CLIENTE -->
+  <div class="modal-overlay hidden" id="modal-client">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-client-title">Nuevo Cliente</h2><button class="modal-close"
+          id="modal-client-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group full-width"><label class="form-label" for="client-name">Nombre / Razón Social
+              *</label><input type="text" class="form-input" id="client-name"
+              placeholder="Ej: Constructora ABC Ltda." /></div>
+          <div class="form-group"><label class="form-label" for="client-rut">RUT</label><input type="text"
+              class="form-input" id="client-rut" placeholder="12.345.678-9" /></div>
+          <div class="form-group"><label class="form-label" for="client-email">Email</label><input type="email"
+              class="form-input" id="client-email" placeholder="contacto@empresa.cl" /></div>
+          <div class="form-group"><label class="form-label" for="client-phone">Teléfono</label><input type="text"
+              class="form-input" id="client-phone" placeholder="+56 9 1234 5678" /></div>
+          <div class="form-group"><label class="form-label" for="client-category">Categoría</label>
+            <select class="form-input" id="client-category">
+              <option value="">Ambas</option>
+              <option value="legal">⚖️ Legal</option>
+              <option value="inmobiliario">🏢 Inmobiliario</option>
+            </select>
+          </div>
+          <div class="form-group full-width"><label class="form-label" for="client-address">Dirección</label><input
+              type="text" class="form-input" id="client-address" placeholder="Av. Providencia 1234, Santiago" /></div>
+          <div class="form-group full-width"><label class="form-label" for="client-notes">Notas</label><textarea
+              class="form-input" id="client-notes" rows="2" placeholder="Observaciones del cliente…"></textarea></div>
+        </div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-ghost" id="modal-client-cancel">Cancelar</button><button
+          class="btn btn-primary" id="modal-client-save">Guardar Cliente</button></div>
+    </div>
+  </div>
+
+  <!-- MODAL: GASTOS (enhanced with receipt OCR) -->
+  <div class="modal-overlay hidden" id="modal-gasto">
+    <div class="modal modal-gasto-wide">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-gasto-title">Agregar Gasto</h2><button class="modal-close"
+          id="modal-gasto-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="gasto-modal-layout">
+          <!-- LEFT: form -->
+          <div class="gasto-form-side">
+            <div class="form-grid">
+              <div class="form-group full-width" id="gasto-project-group">
+                <label class="form-label" for="gasto-project-id">Proyecto *</label>
+                <select class="form-input" id="gasto-project-id"></select>
+              </div>
+              <div class="form-group"><label class="form-label" for="gasto-date">Fecha *</label><input type="date"
+                  class="form-input" id="gasto-date" /></div>
+              <div class="form-group"><label class="form-label" for="gasto-category">Categoría *</label>
+                <select class="form-input" id="gasto-category">
+                  <option value="Transporte">Transporte</option>
+                  <option value="Alimentación">Alimentación</option>
+                  <option value="Alojamiento">Alojamiento</option>
+                  <option value="Materiales">Materiales</option>
+                  <option value="Servicios">Servicios</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </div>
+              <div class="form-group full-width"><label class="form-label" for="gasto-description">Descripción
+                  *</label><input type="text" class="form-input" id="gasto-description"
+                  placeholder="Ej: Taxi al terreno" /></div>
+              <div class="form-group"><label class="form-label" for="gasto-amount">Monto (CLP) *</label><input
+                  type="number" class="form-input" id="gasto-amount" placeholder="0" /></div>
+              <div class="form-group"><label class="form-label" for="gasto-voucher">N° Comprobante</label><input
+                  type="text" class="form-input" id="gasto-voucher" placeholder="BOL-00123" /></div>
+            </div>
+          </div>
+          <!-- RIGHT: receipt upload + OCR -->
+          <div class="gasto-receipt-side">
+            <p class="form-label" style="margin-bottom:8px">Foto de Boleta / Comprobante</p>
+            <div class="receipt-upload-area" id="receipt-upload-area">
+              <input type="file" id="receipt-file-input" accept="image/*" style="display:none" />
+              <div class="receipt-placeholder" id="receipt-placeholder">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21 15 16 10 5 21" />
+                </svg>
+                <p>Subir foto de boleta</p>
+                <span>JPG, PNG — click o arrastra</span>
+                <button type="button" class="btn btn-sm btn-secondary" id="btn-select-receipt">Seleccionar
+                  imagen</button>
+              </div>
+              <div class="receipt-preview hidden" id="receipt-preview">
+                <img id="receipt-img" src="" alt="Boleta" />
+                <button type="button" class="receipt-remove" id="btn-remove-receipt" title="Quitar imagen">×</button>
+              </div>
+            </div>
+            <!-- OCR status -->
+            <div class="ocr-status hidden" id="ocr-status">
+              <div class="ocr-spinner"></div>
+              <span id="ocr-status-text">Leyendo boleta…</span>
+            </div>
+            <div class="ocr-result hidden" id="ocr-result">
+              <div class="ocr-result-header">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Datos detectados automáticamente
+              </div>
+              <div id="ocr-result-body"></div>
+              <p class="form-hint">Verifica y corrige los campos si es necesario.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-ghost" id="modal-gasto-cancel">Cancelar</button><button
+          class="btn btn-primary" id="modal-gasto-save">Guardar Gasto</button></div>
+    </div>
+  </div>
+
+  <!-- MODAL: COBRO DE PROYECTO -->
+  <div class="modal-overlay hidden" id="modal-cobro">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-cobro-title">Nuevo Cobro</h2>
+        <button class="modal-close" id="modal-cobro-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Proyecto *</label>
+          <select class="form-input" id="cobro-project-id"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Concepto / Descripción *</label>
+          <input type="text" class="form-input" id="cobro-concept"
+            placeholder="Ej: Honorarios etapa 1, Cuota inicial…" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Monto (CLP) *</label>
+            <input type="number" class="form-input" id="cobro-amount" placeholder="0" min="0" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fecha Vencimiento</label>
+            <input type="date" class="form-input" id="cobro-due-date" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notas</label>
+          <textarea class="form-input" id="cobro-notes" rows="2" placeholder="Observaciones opcionales…"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="modal-cobro-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="modal-cobro-save">Guardar Cobro</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIGHTBOX: Receipt viewer -->
+  <div class="lightbox hidden" id="lightbox" onclick="closeLightbox()">
+    <button class="lightbox-close" id="lightbox-close" onclick="closeLightbox()">&times;</button>
+    <img id="lightbox-img" src="" alt="Boleta" />
+  </div>
+
+  <!-- MODAL: CARGA MASIVA DE BOLETAS -->
+  <div class="modal-overlay hidden" id="modal-bulk-upload">
+    <div class="modal modal-bulk-wide">
+      <div class="modal-header">
+        <h2 class="modal-title">Subir Boletas</h2>
+        <button class="modal-close" id="modal-bulk-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Drop zone -->
+        <div class="bulk-drop-zone" id="bulk-drop-zone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+          <p>Arrastra tus boletas aquí</p>
+          <span>JPG, PNG, PDF — múltiples archivos a la vez</span>
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-select-bulk">Seleccionar archivos</button>
+          <input type="file" id="bulk-file-input" multiple accept="image/*,.pdf" class="hidden" />
+        </div>
+        <!-- Progress area -->
+        <div class="bulk-progress-area hidden" id="bulk-progress-area">
+          <div class="bulk-progress-header">
+            <span id="bulk-progress-text">Procesando y listando boletas…</span>
+            <div class="bulk-progress-bar-wrap">
+              <div class="bulk-progress-bar" id="bulk-progress-bar" style="width:0%"></div>
+            </div>
+          </div>
+          <div class="bulk-file-list" id="bulk-file-list"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="modal-bulk-cancel">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: UBICACIÓN -->
+  <div class="modal-overlay hidden" id="modal-location">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Editar Ubicación</h2><button class="modal-close"
+          id="modal-location-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Buscar dirección</label>
+          <div class="search-row"><input type="text" class="form-input" id="location-search-input"
+              placeholder="Ingresa una dirección…" /><button class="btn btn-primary"
+              id="btn-location-search">Buscar</button></div>
+        </div>
+        <div id="location-map" style="height:350px;border-radius:10px;margin-top:12px;"></div>
+        <p class="form-hint">También puedes hacer clic en el mapa para fijar la ubicación.</p>
+      </div>
+      <div class="modal-footer"><button class="btn btn-ghost" id="modal-location-cancel">Cancelar</button><button
+          class="btn btn-primary" id="modal-location-save">Guardar Ubicación</button></div>
+    </div>
+  </div>
+
+  <!-- MODAL: USUARIO -->
+  <div class="modal-overlay hidden" id="modal-user">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-user-title">Nuevo Usuario</h2><button class="modal-close"
+          id="modal-user-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group full-width"><label class="form-label" for="user-name">Nombre Completo *</label><input
+              type="text" class="form-input" id="user-name" placeholder="Ej: Juan Pérez" /></div>
+          <div class="form-group"><label class="form-label" for="user-username">Usuario *</label><input type="text"
+              class="form-input" id="user-username" placeholder="juanperez" autocomplete="off" /></div>
+          <div class="form-group"><label class="form-label" for="user-role">Rol *</label>
+            <select class="form-input" id="user-role">
+              <option value="admin">Administrador</option>
+              <option value="normal">Normal</option>
+              <option value="visualizador">Visualizador</option>
+            </select>
+          </div>
+          <div class="form-group full-width">
+            <label class="form-label">Acceso a Categorías</label>
+            <div class="checkbox-group">
+              <label class="checkbox-label"><input type="checkbox" id="user-access-legal" value="legal" checked /> ⚖️
+                Legal</label>
+              <label class="checkbox-label"><input type="checkbox" id="user-access-inmobiliario" value="inmobiliario"
+                  checked /> 🏢 Inmobiliario</label>
+            </div>
+          </div>
+          <div class="form-group"><label class="form-label" for="user-password">Contraseña *</label><input
+              type="password" class="form-input" id="user-password" placeholder="••••••••"
+              autocomplete="new-password" /></div>
+          <div class="form-group"><label class="form-label" for="user-password2">Confirmar *</label><input
+              type="password" class="form-input" id="user-password2" placeholder="••••••••"
+              autocomplete="new-password" /></div>
+        </div>
+        <div class="login-error hidden" id="user-form-error">Error en el formulario</div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-ghost" id="modal-user-cancel">Cancelar</button><button
+          class="btn btn-primary" id="modal-user-save">Guardar</button></div>
+    </div>
+  </div>
+
+  <!-- MODAL: CAMBIAR CONTRASEÑA -->
+  <div class="modal-overlay hidden" id="modal-change-pass">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h2 class="modal-title">Cambiar Contraseña</h2><button class="modal-close"
+          id="modal-chpass-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group full-width"><label class="form-label" for="chpass-new">Nueva Contraseña *</label><input
+              type="password" class="form-input" id="chpass-new" placeholder="••••••••" /></div>
+          <div class="form-group full-width"><label class="form-label" for="chpass-confirm">Confirmar *</label><input
+              type="password" class="form-input" id="chpass-confirm" placeholder="••••••••" /></div>
+        </div>
+        <div class="login-error hidden" id="chpass-error">Las contraseñas no coinciden</div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-ghost" id="modal-chpass-cancel">Cancelar</button><button
+          class="btn btn-primary" id="modal-chpass-save">Cambiar</button></div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast hidden" id="toast"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
+  <script src="supabase-storage.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>
