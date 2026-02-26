@@ -847,7 +847,7 @@ async function renderFiles(projectId) {
     empty.classList.add('hidden');
     grid.innerHTML = files.map(f => {
       const { icon, bg } = getFileIcon(f.name);
-      return `<div class="file-card" title="${escHtml(f.name)}" onclick="downloadFile('${f.id}')" style="cursor:pointer;">
+      return `<div class="file-card" title="${escHtml(f.name)}" onclick="openLightboxFile('${f.id}')" style="cursor:pointer;">
         <div class="file-icon" style="background:${bg}">${icon}</div>
         <div class="file-name">${escHtml(f.name)}</div>
         <div class="file-size">${formatSize(f.size)}</div>
@@ -880,14 +880,11 @@ async function deleteFile(id) {
   showToast('Archivo eliminado', 'info');
 }
 
-async function downloadFile(id) {
+async function openLightboxFile(fileId) {
   const all = await getFiles();
-  const f = all.find(file => file.id === id);
+  const f = all.find(file => file.id === fileId);
   if (!f) return;
-  const a = document.createElement('a');
-  a.href = f.dataUrl;
-  a.download = f.name;
-  a.click();
+  openLightboxData(f.dataUrl, f.type, f.name);
 }
 
 // ── CLIENTES ─────────────────────────────────────────────────
@@ -1207,17 +1204,53 @@ async function exportGastosGlobal() {
 }
 
 // ── LIGHTBOX ──────────────────────────────────────────────────
+function openLightboxData(dataUrl, fileType, fileName) {
+  $('#lightbox-img').classList.add('hidden');
+  $('#lightbox-iframe').classList.add('hidden');
+  $('#lightbox-fallback').classList.add('hidden');
+  $('#lightbox-img').src = '';
+  $('#lightbox-iframe').src = '';
+
+  if (!dataUrl) return;
+
+  const type = (fileType || '').toLowerCase();
+  const name = (fileName || '').toLowerCase();
+
+  const isImage = type.startsWith('image/') || name.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+  const isPdf = type === 'application/pdf' || name.match(/\.pdf$/i);
+
+  if (isImage) {
+    $('#lightbox-img').src = dataUrl;
+    $('#lightbox-img').classList.remove('hidden');
+  } else if (isPdf) {
+    $('#lightbox-iframe').src = dataUrl;
+    $('#lightbox-iframe').classList.remove('hidden');
+  } else {
+    $('#lightbox-download-link').href = dataUrl;
+    $('#lightbox-download-link').download = name || 'archivo';
+    $('#lightbox-fallback').classList.remove('hidden');
+  }
+
+  $('#lightbox').classList.remove('hidden');
+}
+
 async function openLightbox(gastoId) {
   const all = await getGastos();
   const g = all.find(g => g.id === gastoId);
   if (!g?.receiptDataUrl) return;
-  $('#lightbox-img').src = g.receiptDataUrl;
-  $('#lightbox').classList.remove('hidden');
+  openLightboxData(g.receiptDataUrl, 'image/jpeg', 'Boleta.jpg');
+}
+
+function openLightboxDirect(gastoId) {
+  const g = APP.reviewPending.find(g => g.id === gastoId);
+  if (!g?.receiptDataUrl) return;
+  openLightboxData(g.receiptDataUrl, 'image/jpeg', 'Boleta.jpg');
 }
 
 function closeLightbox() {
   $('#lightbox').classList.add('hidden');
   $('#lightbox-img').src = '';
+  $('#lightbox-iframe').src = '';
 }
 
 // ── GASTOS ────────────────────────────────────────────────────
