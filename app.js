@@ -2371,7 +2371,6 @@ async function init() {
   $('#modal-bulk-upload').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeBulkUploadModal(); });
   $('#btn-select-bulk').addEventListener('click', () => $('#bulk-file-input').click());
   $('#bulk-file-input').addEventListener('change', (e) => { if (e.target.files.length) processBulkFiles(e.target.files); e.target.value = ''; });
-  $('#btn-bulk-submit').addEventListener('click', submitBulkGastos);
   // Bulk drag & drop
   const dropZone = $('#bulk-drop-zone');
   dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
