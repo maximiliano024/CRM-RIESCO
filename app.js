@@ -860,16 +860,54 @@ async function renderFiles(projectId) {
 async function handleFileUpload(input) {
   const fileList = Array.from(input.files);
   if (!fileList.length) return;
-  const readers = fileList.map(file => new Promise(resolve => {
+
+  const grid = $('#files-grid');
+  const empty = $('#files-empty');
+  empty.classList.add('hidden');
+
+  const readers = fileList.map((file, i) => new Promise(resolve => {
+    const { icon, bg } = getFileIcon(file.name);
+    const tempId = `temp-upload-${Date.now()}-${i}`;
+
+    const cardHtml = `<div class="file-card uploading-card" id="${tempId}" style="opacity:0.7">
+        <div class="file-icon" style="background:${bg}">${icon}</div>
+        <div class="file-name" style="flex:1;">
+          <div style="margin-bottom:4px;">${escHtml(file.name)}</div>
+          <div style="width:100%;background:var(--border);height:4px;border-radius:2px;overflow:hidden;">
+            <div class="upload-progress-bar" style="height:100%;width:0%;background:var(--accent);transition:width 0.2s;"></div>
+          </div>
+        </div>
+      </div>`;
+
+    // Si la lista estaba vacía y solo tenía el empty state, lo limpiamos antes de agregar
+    if (grid.children.length === 1 && grid.children[0] === empty) {
+      grid.innerHTML = '';
+      grid.appendChild(empty);
+    }
+
+    grid.insertAdjacentHTML('beforeend', cardHtml);
+    const progressBar = $('#' + tempId + ' .upload-progress-bar');
+
     const reader = new FileReader();
+    reader.onprogress = (e) => {
+      if (e.lengthComputable && progressBar) {
+        const pct = Math.round((e.loaded / e.total) * 80); // 80% lectura local
+        progressBar.style.width = pct + '%';
+      }
+    };
     reader.onload = async (e) => {
+      if (progressBar) progressBar.style.width = '90%'; // 90% esperando servidor
       await upsertFile({ id: uid(), projectId: APP.currentProjectId, name: file.name, size: file.size, type: file.type, dataUrl: e.target.result, createdAt: new Date().toISOString() });
+      if (progressBar) progressBar.style.width = '100%';
+
+      // Actualizamos esta tarjeta final llamando a renderFiles
+      await renderFiles(APP.currentProjectId);
       resolve();
     };
     reader.readAsDataURL(file);
   }));
+
   await Promise.all(readers);
-  renderFiles(APP.currentProjectId);
   showToast(`${fileList.length} archivo(s) adjuntado(s)`, 'success');
   input.value = '';
 }
