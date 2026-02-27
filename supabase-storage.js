@@ -242,6 +242,25 @@ async function deleteCommentById(id) {
 }
 
 // ── FILES ─────────────────────────────────────────────────────
+async function uploadFileToStorage(projectId, fileId, fileObj) {
+    const ext = fileObj.name.split('.').pop() || '';
+    const path = `${projectId}/${fileId}.${ext}`;
+
+    // Usa supabase storage
+    const { data, error } = await _supabase.storage.from('archivos').upload(path, fileObj, {
+        cacheControl: '3600',
+        upsert: false
+    });
+
+    if (error) {
+        console.error('uploadFileToStorage Error:', error);
+        return null; // Devolvemos null si falla (archivos grandes/bucket sin configurar)
+    }
+
+    const { data: urlData } = _supabase.storage.from('archivos').getPublicUrl(path);
+    return urlData.publicUrl;
+}
+
 async function getFiles() {
     const { data, error } = await _supabase.from('files').select('*').order('created_at', { ascending: false });
     if (error) { console.error('getFiles:', error); return []; }

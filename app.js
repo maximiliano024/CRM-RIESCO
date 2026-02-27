@@ -865,9 +865,10 @@ async function handleFileUpload(input) {
   const empty = $('#files-empty');
   empty.classList.add('hidden');
 
-  const readers = fileList.map((file, i) => new Promise(resolve => {
+  const readers = fileList.map(async (file, i) => {
     const { icon, bg } = getFileIcon(file.name);
-    const tempId = `temp-upload-${Date.now()}-${i}`;
+    const tempFileId = uid();
+    const tempId = `temp-upload-${tempFileId}-${i}`;
 
     const cardHtml = `<div class="file-card uploading-card" id="${tempId}" style="opacity:0.7">
         <div class="file-icon" style="background:${bg}">${icon}</div>
@@ -888,27 +889,41 @@ async function handleFileUpload(input) {
     grid.insertAdjacentHTML('beforeend', cardHtml);
     const progressBar = $('#' + tempId + ' .upload-progress-bar');
 
-    const reader = new FileReader();
-    reader.onprogress = (e) => {
-      if (e.lengthComputable && progressBar) {
-        const pct = Math.round((e.loaded / e.total) * 80); // 80% lectura local
-        progressBar.style.width = pct + '%';
-      }
-    };
-    reader.onload = async (e) => {
-      if (progressBar) progressBar.style.width = '90%'; // 90% esperando servidor
-      await upsertFile({ id: uid(), projectId: APP.currentProjectId, name: file.name, size: file.size, type: file.type, dataUrl: e.target.result, createdAt: new Date().toISOString() });
-      if (progressBar) progressBar.style.width = '100%';
+    if (progressBar) progressBar.style.width = '30%'; // Inicio de carga
 
-      // Actualizamos esta tarjeta final llamando a renderFiles
-      await renderFiles(APP.currentProjectId);
-      resolve();
-    };
-    reader.readAsDataURL(file);
-  }));
+    try {
+      // Usar Supabase Storage nativo en lugar de Base64
+      const publicUrl = await uploadFileToStorage(APP.currentProjectId, tempFileId, file);
+
+      if (progressBar) progressBar.style.width = '80%'; // Ya subió a storage
+
+      if (publicUrl) {
+        // Guardar registro en base de datos apuntando a la URL pública final
+        await upsertFile({
+          id: tempFileId,
+          projectId: APP.currentProjectId,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          dataUrl: publicUrl,
+          createdAt: new Date().toISOString()
+        });
+
+        if (progressBar) progressBar.style.width = '100%';
+      } else {
+        showToast('Error al procesar archivo: ' + file.name + ' (Tal vez necesitas ejecutar setup-storage.sql)', 'error');
+        if (progressBar) progressBar.parentElement.style.background = 'var(--danger)';
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('Error al subir: ' + file.name, 'error');
+    }
+
+    // Actualizamos esta tarjeta final llamando a renderFiles
+    await renderFiles(APP.currentProjectId);
+  });
 
   await Promise.all(readers);
-  showToast(`${fileList.length} archivo(s) adjuntado(s)`, 'success');
   input.value = '';
 }
 
