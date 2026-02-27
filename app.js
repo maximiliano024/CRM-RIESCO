@@ -842,10 +842,12 @@ async function renderFiles(projectId) {
   const empty = $('#files-empty');
 
   if (files.length === 0) {
-    grid.innerHTML = ''; grid.appendChild(empty); empty.classList.remove('hidden');
+    grid.innerHTML = '';
+    if (empty) grid.appendChild(empty);
+    if (empty) empty.classList.remove('hidden');
   } else {
-    empty.classList.add('hidden');
-    grid.innerHTML = files.map(f => {
+    if (empty) empty.classList.add('hidden');
+    const cardsHtml = files.map(f => {
       const { icon, bg } = getFileIcon(f.name);
       return `<div class="file-card" title="${escHtml(f.name)}" onclick="openLightboxFile('${f.id}')" style="cursor:pointer;">
         <div class="file-icon" style="background:${bg}">${icon}</div>
@@ -854,6 +856,9 @@ async function renderFiles(projectId) {
         <button class="file-delete can-edit" onclick="event.stopPropagation(); deleteFile('${f.id}')" title="Eliminar">×</button>
       </div>`;
     }).join('');
+    grid.innerHTML = '';
+    if (empty) grid.appendChild(empty);
+    grid.insertAdjacentHTML('beforeend', cardsHtml);
   }
 }
 
@@ -863,7 +868,7 @@ async function handleFileUpload(input) {
 
   const grid = $('#files-grid');
   const empty = $('#files-empty');
-  empty.classList.add('hidden');
+  if (empty) empty.classList.add('hidden');
 
   const readers = fileList.map(async (file, i) => {
     const { icon, bg } = getFileIcon(file.name);
@@ -880,12 +885,7 @@ async function handleFileUpload(input) {
         </div>
       </div>`;
 
-    // Si la lista estaba vacía y solo tenía el empty state, lo limpiamos antes de agregar
-    if (grid.children.length === 1 && grid.children[0] === empty) {
-      grid.innerHTML = '';
-      grid.appendChild(empty);
-    }
-
+    // Solo anexamos la tarjeta, ya ocultamos el texto de empty, asi que no rompemos el DOM
     grid.insertAdjacentHTML('beforeend', cardHtml);
     const progressBar = $('#' + tempId + ' .upload-progress-bar');
 
