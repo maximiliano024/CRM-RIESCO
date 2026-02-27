@@ -451,6 +451,7 @@
           <div class="tabs-nav">
             <button class="tab-btn active" data-tab="tab-resumen">Resumen</button>
             <button class="tab-btn" data-tab="tab-archivos">Archivos</button>
+            <button class="tab-btn" data-tab="tab-tareas" id="tab-btn-tareas" style="display:none;">Tareas</button>
             <button class="tab-btn" data-tab="tab-comentarios">Comentarios</button>
             <button class="tab-btn" data-tab="tab-gastos">Gastos Reembolsables</button>
           </div>
@@ -570,6 +571,39 @@
                     <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                   </svg>
                   <p>No hay gastos registrados.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Tab Tareas -->
+          <div class="tab-content hidden" id="tab-tareas">
+            <div class="gastos-summary-bar">
+              <div class="gasto-summary-item"><span class="gasto-summary-label">Tareas Pendientes</span><span
+                  class="gasto-summary-value" id="project-tareas-count">0</span></div>
+              <button class="btn btn-primary btn-sm can-edit" id="btn-project-add-tarea">+ Nueva Tarea</button>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Listado de Tareas</h3>
+              </div>
+              <div class="card-body">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Estado</th>
+                      <th>Descripción</th>
+                      <th>Asignado A</th>
+                      <th>Fecha Límite</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="project-tareas-table-body"></tbody>
+                </table>
+                <div class="empty-state hidden" id="project-tareas-empty">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                  </svg>
+                  <p>No hay tareas registradas en este proyecto.</p>
                 </div>
               </div>
             </div>

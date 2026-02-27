@@ -705,11 +705,16 @@ async function openProjectDetail(id) {
     { label: 'Descripción', value: p.description || '—' },
   ].map(i => `<div class="info-item"><span class="info-label">${i.label}</span><span class="info-value">${escHtml(String(i.value))}</span></div>`).join('');
 
+  $('#tab-btn-tareas').style.display = p.category === 'inmobiliario' ? '' : 'none';
+
   activateTab('tab-resumen');
   setTimeout(() => initProjectMap(p), 120);
   renderFiles(id);
   renderComments(id);
   renderGastos(id);
+  if (p.category === 'inmobiliario') {
+    renderProjectTareas(id);
+  }
 }
 
 // ── MAP ───────────────────────────────────────────────────────
@@ -832,6 +837,92 @@ async function addComment() {
 async function deleteComment(id) {
   await deleteCommentById(id);
   renderComments(APP.currentProjectId);
+}
+
+// ── TAREAS (PROJECT DETAIL) ──────────────────────────────────
+async function renderProjectTareas(projectId) {
+  let [tareas, users] = await Promise.all([getTareas(), getUsers()]);
+  tareas = tareas.filter(t => t.projectId === projectId);
+
+  // Sort: pending first, completed last. Then by due date
+  tareas.sort((a, b) => {
+    if (a.status === 'completada' && b.status !== 'completada') return 1;
+    if (a.status !== 'completada' && b.status === 'completada') return -1;
+    return new Date(a.dueDate || 0) - new Date(b.dueDate || 0);
+  });
+
+  const tbody = $('#project-tareas-table-body');
+  const empty = $('#project-tareas-empty');
+
+  const pendingCount = tareas.filter(t => t.status !== 'completada').length;
+  $('#project-tareas-count').textContent = pendingCount;
+
+  if (tareas.length === 0) {
+    if (tbody) tbody.innerHTML = '';
+    if (empty) empty.classList.remove('hidden');
+    return;
+  }
+  if (empty) empty.classList.add('hidden');
+
+  tbody.innerHTML = tareas.map(t => {
+    const u = users.find(usr => usr.id === t.userId);
+    const uName = u ? u.name : 'Usuario Eliminado';
+
+    // Check if task is overdue
+    let isOverdue = false;
+    if (t.status !== 'completada' && t.dueDate) {
+      if (new Date(t.dueDate) < new Date(today())) isOverdue = true;
+    }
+
+    const badgeClass = t.status === 'completada' ? 'success' : isOverdue ? 'danger' : 'warning';
+    const rowClass = t.status === 'completada' ? 'opacity: 0.6;' : '';
+
+    return `<tr style="${rowClass}">
+      <td><span class="badge ${badgeClass}">${t.status}</span></td>
+      <td>${escHtml(t.description)}</td>
+      <td>${escHtml(uName)}</td>
+      <td>${formatDate(t.dueDate)}</td>
+      <td>
+        <div class="td-actions">
+          ${t.status !== 'completada' ? `<button class="btn btn-sm btn-ghost can-edit" onclick="completeProjectTarea('${t.id}')">✓ Completar</button>` : `<button class="btn btn-sm btn-ghost can-edit" onclick="reopenProjectTarea('${t.id}')">↻ Reabrir</button>`}
+          <button class="btn btn-sm btn-secondary can-edit" onclick="openTareaModal('${t.id}')">Editar</button>
+          <button class="btn btn-sm btn-danger can-edit" onclick="deleteProjectTarea('${t.id}')">Eliminar</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function deleteProjectTarea(id) {
+  if (!confirm('¿Seguro que deseas eliminar esta tarea?')) return;
+  await deleteTareaById(id);
+  showToast('Tarea eliminada', 'info');
+  renderProjectTareas(APP.currentProjectId);
+  if (APP.currentView === 'tareas') renderTareas(APP.currentCategory);
+}
+
+async function completeProjectTarea(id) {
+  const all = await getTareas();
+  const t = all.find(ta => ta.id === id);
+  if (t) {
+    t.status = 'completada';
+    await upsertTarea(t);
+    showToast('Tarea completada 🎉', 'success');
+    renderProjectTareas(APP.currentProjectId);
+    if (APP.currentView === 'tareas') renderTareas(APP.currentCategory);
+  }
+}
+
+async function reopenProjectTarea(id) {
+  const all = await getTareas();
+  const t = all.find(ta => ta.id === id);
+  if (t) {
+    t.status = 'pendiente';
+    await upsertTarea(t);
+    showToast('Tarea reabierta', 'info');
+    renderProjectTareas(APP.currentProjectId);
+    if (APP.currentView === 'tareas') renderTareas(APP.currentCategory);
+  }
 }
 
 // ── FILES ─────────────────────────────────────────────────────
@@ -2457,14 +2548,16 @@ async function saveTarea() {
   await upsertTarea(t);
   showToast(APP.editingTareaId ? 'Tarea actualizada' : 'Tarea creada', 'success');
   closeTareaModal();
-  renderTareas(APP.currentCategory);
+  if (APP.currentView === 'project-detail') renderProjectTareas(APP.currentProjectId);
+  else renderTareas(APP.currentCategory);
 }
 
 async function deleteTarea(id) {
   if (!confirm('¿Seguro que deseas eliminar esta tarea?')) return;
   await deleteTareaById(id);
   showToast('Tarea eliminada', 'info');
-  renderTareas(APP.currentCategory);
+  if (APP.currentView === 'project-detail') renderProjectTareas(APP.currentProjectId);
+  else renderTareas(APP.currentCategory);
 }
 
 async function completeTarea(id) {
@@ -2474,7 +2567,8 @@ async function completeTarea(id) {
     t.status = 'completada';
     await upsertTarea(t);
     showToast('Tarea completada 🎉', 'success');
-    renderTareas(APP.currentCategory);
+    if (APP.currentView === 'project-detail') renderProjectTareas(APP.currentProjectId);
+    else renderTareas(APP.currentCategory);
   }
 }
 
@@ -2485,7 +2579,8 @@ async function reopenTarea(id) {
     t.status = 'pendiente';
     await upsertTarea(t);
     showToast('Tarea reabierta', 'info');
-    renderTareas(APP.currentCategory);
+    if (APP.currentView === 'project-detail') renderProjectTareas(APP.currentProjectId);
+    else renderTareas(APP.currentCategory);
   }
 }
 
@@ -2666,6 +2761,18 @@ async function init() {
 
   // Tareas
   $('#btn-add-tarea').addEventListener('click', () => openTareaModal());
+  $('#btn-project-add-tarea').addEventListener('click', () => {
+    openTareaModal();
+    setTimeout(() => {
+      const projSelect = $('#tarea-proyecto');
+      if (projSelect) {
+        if (!Array.from(projSelect.options).some(o => o.value === APP.currentProjectId)) {
+          projSelect.innerHTML += `<option value="${APP.currentProjectId}" selected>Proyecto Actual</option>`;
+        }
+        projSelect.value = APP.currentProjectId;
+      }
+    }, 100);
+  });
   $('#modal-tarea-close').addEventListener('click', closeTareaModal);
   $('#modal-tarea-cancel').addEventListener('click', closeTareaModal);
   $('#modal-tarea-save').addEventListener('click', saveTarea);
