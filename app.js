@@ -118,34 +118,30 @@ async function seedAdmin() {
   });
 }
 
-async function doLogin() {
-  const username = $('#login-user').value.trim();
-  const password = $('#login-pass').value;
+async function doLoginMicrosoft() {
   const err = $('#login-error');
+  if (err) err.classList.add('hidden');
 
-  if (!username || !password) {
-    err.textContent = 'Ingresa usuario y contraseña';
-    err.classList.remove('hidden');
-    return;
+  const { data, error } = await _supabase.auth.signInWithOAuth({
+    provider: 'azure',
+    options: {
+      scopes: 'email openid profile offline_access Calendars.ReadWrite User.Read',
+      redirectTo: window.location.origin + window.location.pathname
+    }
+  });
+
+  if (error) {
+    if (err) {
+      err.textContent = 'Error conectando con Microsoft: ' + error.message;
+      err.classList.remove('hidden');
+    }
+    console.error('Error OAuth:', error);
   }
-
-  const hash = await hashPassword(password);
-  const users = await getUsers();
-  const user = users.find(u => u.username === username && u.password === hash);
-
-  if (!user) {
-    err.textContent = 'Usuario o contraseña incorrectos';
-    err.classList.remove('hidden');
-    return;
-  }
-
-  err.classList.add('hidden');
-  setCurrentUser(user);
-  bootApp(user);
 }
 
-function doLogout() {
+async function doLogout() {
   clearSession();
+  await _supabase.auth.signOut();
   location.reload();
 }
 
@@ -2588,17 +2584,43 @@ async function reopenTarea(id) {
 async function init() {
   await seedAdmin();
 
-  // Check existing session
-  const existingUser = getCurrentUser();
-  if (existingUser) {
-    bootApp(existingUser);
-  }
+  // Escuchar sesión en tiempo real de Supabase (Microsoft Graph)
+  _supabase.auth.onAuthStateChange(async (event, session) => {
+    if (session && session.user) {
+      const email = session.user.email;
+      const name = session.user.user_metadata?.full_name || email.split('@')[0];
+
+      let users = await getUsers();
+      let dbUser = users.find(u => u.username.toLowerCase() === email.toLowerCase());
+
+      // Auto-registrar usuario si no existe pero que haya pasado Azure
+      if (!dbUser) {
+        dbUser = {
+          id: uid(),
+          username: email,
+          name: name,
+          password: 'ms-oauth-user',
+          role: 'normal',
+          access: ['legal', 'inmobiliario']
+        };
+        await upsertUser(dbUser);
+      }
+
+      setCurrentUser(dbUser);
+      bootApp(dbUser);
+    } else {
+      // No hay sesión
+      clearSession();
+      const shell = $('#app-shell');
+      const login = $('#login-screen');
+      if (shell) shell.classList.add('hidden');
+      if (login) login.classList.remove('hidden');
+    }
+  });
 
   // Login
-  const doLoginHandler = () => doLogin();
-  $('#btn-login').addEventListener('click', doLoginHandler);
-  $('#login-pass').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
-  $('#login-user').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#login-pass').focus(); });
+  const btnMs = $('#btn-login-microsoft');
+  if (btnMs) btnMs.addEventListener('click', doLoginMicrosoft);
 
   // Logout
   $('#btn-logout').addEventListener('click', doLogout);
