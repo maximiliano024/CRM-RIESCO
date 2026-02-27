@@ -1597,6 +1597,7 @@ textarea.form-input {
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 20px;
+  text-align: center;
 }
 
 .login-error {
