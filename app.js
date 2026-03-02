@@ -126,7 +126,10 @@ async function doLoginMicrosoft() {
     provider: 'azure',
     options: {
       scopes: 'email openid profile offline_access Calendars.ReadWrite User.Read',
-      redirectTo: window.location.origin + window.location.pathname
+      redirectTo: window.location.origin + window.location.pathname,
+      queryParams: {
+        prompt: 'select_account'
+      }
     }
   });
 
