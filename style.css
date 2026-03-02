@@ -177,7 +177,7 @@ select {
   gap: 12px;
   padding: 10px 14px;
   border-radius: var(--radius-sm);
-  color: rgba(255, 255, 255, 0.72);
+  color: #ffffff;
   font-size: 14px;
   font-weight: 500;
   transition: all var(--transition);
@@ -1631,7 +1631,7 @@ textarea.form-input {
   border-radius: var(--radius-sm);
   background: none;
   border: none;
-  color: var(--text-secondary);
+  color: #ffffff;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -1642,8 +1642,8 @@ textarea.form-input {
 }
 
 .nav-group-header:hover {
-  background: var(--bg-elevated);
-  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.10);
+  color: #ffffff;
 }
 
 .nav-group-icon {
@@ -1658,7 +1658,7 @@ textarea.form-input {
   width: 14px;
   height: 14px;
   transition: transform var(--transition);
-  opacity: 0.5;
+  opacity: 0.85;
 }
 
 .nav-group.collapsed .nav-group-chevron {
@@ -2681,7 +2681,6 @@ body.read-only .add-card-btn {
   color: #ffffff;
   letter-spacing: 0.01em;
   line-height: 1.3;
-  opacity: 0.92;
 }
 
 /* ══════════════════════════════════════════════════════════
