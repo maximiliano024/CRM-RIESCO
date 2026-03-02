@@ -2589,17 +2589,13 @@ async function reopenTarea(id) {
 
 // ── CALENDAR ──────────────────────────────────────────────────
 async function renderCalendar() {
-  console.log('--- rendering calendar view ---');
   const container = $('#calendar-events-list');
   const status = $('#calendar-status');
 
-  if (!container) {
-    console.error('CRITICAL: #calendar-events-list not found in DOM');
-    return;
-  }
+  if (!container) return;
 
-  // Get Supabase session to find provider_token (Microsoft Graph)
-  const { data: { session } } = await _supabase.auth.getSession();
+  // Usar token de memoria si existe, o buscar en localStorage
+  const token = APP.msToken || localStorage.getItem('ms_graph_token');
 
   // Supabase no persiste provider_token en recargas, buscamos en localStorage si no está
   const token = session?.provider_token || localStorage.getItem('ms_graph_token');
@@ -2739,6 +2735,7 @@ async function init() {
 
       // Persistir provider_token (Microsoft Graph) si existe en la sesión
       if (session.provider_token) {
+        APP.msToken = session.provider_token; // Cache en memoria
         localStorage.setItem('ms_graph_token', session.provider_token);
       }
 
