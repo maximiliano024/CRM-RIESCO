@@ -4,6 +4,8 @@
    ============================================================ */
 'use strict';
 
+console.log('CRM Riesco y Asociados - app.js v1.1 loaded');
+
 // ── STATE ────────────────────────────────────────────────────
 const APP = {
   currentView: 'dashboard',
@@ -2659,78 +2661,91 @@ async function renderCalendar() {
   if (monthTitle) monthTitle.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1);
 
   status.innerHTML = '<span style="font-size:12px;color:var(--text-muted)">Sincronizando...</span>';
+  console.log('renderCalendar: Starting sync...');
 
-  // Get CRM Tareas and Outlook Events
-  let [tareas, projects] = await Promise.all([getTareas(), getProjects()]);
-  const token = APP.msToken || localStorage.getItem('ms_graph_token');
+  try {
+    // Get CRM Tareas and Outlook Events
+    let [tareas, projects] = await Promise.all([
+      getTareas().catch(e => { console.error('getTareas error:', e); return []; }),
+      getProjects().catch(e => { console.error('getProjects error:', e); return []; })
+    ]);
 
-  if (!token) {
-    status.innerHTML = '<span style="font-size:12px;color:var(--danger);cursor:pointer" onclick="doLoginMicrosoft()">⚠ Outlook no conectado (Conectar)</span>';
-  }
+    console.log(`renderCalendar: Found ${tareas.length} tasks and ${projects.length} projects`);
 
-  let outlookEvents = [];
-  if (token) {
-    try {
-      const startOfMonth = new Date(currentYear, currentMonth, 1).toISOString();
-      // ... fetching ...
-      const endOfMonth = new Date(currentYear, currentMonth + 1, 0).toISOString();
-      const resp = await fetch(`https://graph.microsoft.com/v1.0/me/calendarView?startDateTime=${startOfMonth}&endDateTime=${endOfMonth}&$top=100`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (resp.ok) {
-        const data = await resp.json();
-        outlookEvents = data.value || [];
-      }
-    } catch (e) {
-      console.warn('Outlook sync error:', e);
+    const token = APP.msToken || localStorage.getItem('ms_graph_token');
+
+    if (!token) {
+      status.innerHTML = '<span style="font-size:12px;color:var(--danger);cursor:pointer" onclick="doLoginMicrosoft()">⚠ Outlook no conectado (Conectar)</span>';
     }
+
+    let outlookEvents = [];
+    if (token) {
+      try {
+        const startOfMonth = new Date(currentYear, currentMonth, 1).toISOString();
+        const endOfMonth = new Date(currentYear, currentMonth + 1, 0).toISOString();
+        const resp = await fetch(`https://graph.microsoft.com/v1.0/me/calendarView?startDateTime=${startOfMonth}&endDateTime=${endOfMonth}&$top=100`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          outlookEvents = data.value || [];
+          console.log(`renderCalendar: Found ${outlookEvents.length} Outlook events`);
+        } else {
+          console.warn('renderCalendar: Outlook fetch failed', resp.status);
+        }
+      } catch (e) {
+        console.warn('Outlook sync error:', e);
+      }
+    }
+
+    // Generate grid
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const prevMonthDays = new Date(currentYear, currentMonth, 0).getDate();
+
+    let html = '';
+
+    // Previous month days
+    for (let i = firstDay; i > 0; i--) {
+      const d = prevMonthDays - i + 1;
+      html += `<div class="calendar-day other-month"><div class="day-number">${d}</div></div>`;
+    }
+
+    // Current month days
+    const todayDate = new Date();
+    for (let day = 1; day <= daysInMonth; day++) {
+      const isToday = todayDate.getFullYear() === currentYear && todayDate.getMonth() === currentMonth && todayDate.getDate() === day;
+      const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+      // Filter tasks for this day
+      const dayTareas = tareas.filter(t => t.dueDate === dateStr);
+      const dayOutlook = outlookEvents.filter(ev => ev.start.dateTime.startsWith(dateStr));
+
+      const eventsHtml = [
+        ...dayTareas.map(t => {
+          const proj = projects.find(p => p.id === t.projectId);
+          const typeClass = proj?.category === 'legal' ? 'cal-event-legal' : 'cal-event-inmo';
+          return `<div class="cal-event ${typeClass}" onclick="openTareaModal('${t.id}')">${escHtml(t.description)}</div>`;
+        }),
+        ...dayOutlook.map(ev => {
+          if (tareas.some(t => t.outlookEventId === ev.id)) return '';
+          return `<div class="cal-event cal-event-outlook">${escHtml(ev.subject)}</div>`;
+        })
+      ].join('');
+
+      html += `
+        <div class="calendar-day ${isToday ? 'today' : ''}">
+          <div class="day-number">${day}</div>
+          <div class="calendar-events">${eventsHtml}</div>
+        </div>`;
+    }
+
+    grid.innerHTML = html;
+    status.innerHTML = `<span style="font-size:12px;color:var(--success)">✓ Sincronizado</span>`;
+  } catch (err) {
+    console.error('renderCalendar critical error:', err);
+    status.innerHTML = `<span style="font-size:12px;color:var(--danger)">Error al renderizar: ${err.message}</span>`;
   }
-
-  // Generate grid
-  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-  const prevMonthDays = new Date(currentYear, currentMonth, 0).getDate();
-
-  let html = '';
-
-  // Previous month days
-  for (let i = firstDay; i > 0; i--) {
-    const d = prevMonthDays - i + 1;
-    html += `<div class="calendar-day other-month"><div class="day-number">${d}</div></div>`;
-  }
-
-  // Current month days
-  const todayDate = new Date();
-  for (let day = 1; day <= daysInMonth; day++) {
-    const isToday = todayDate.getFullYear() === currentYear && todayDate.getMonth() === currentMonth && todayDate.getDate() === day;
-    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-
-    // Filter tasks for this day
-    const dayTareas = tareas.filter(t => t.dueDate === dateStr);
-    const dayOutlook = outlookEvents.filter(ev => ev.start.dateTime.startsWith(dateStr));
-
-    const eventsHtml = [
-      ...dayTareas.map(t => {
-        const proj = projects.find(p => p.id === t.projectId);
-        const typeClass = proj?.category === 'legal' ? 'cal-event-legal' : 'cal-event-inmo';
-        return `<div class="cal-event ${typeClass}" onclick="openTareaModal('${t.id}')">${escHtml(t.description)}</div>`;
-      }),
-      ...dayOutlook.map(ev => {
-        // Avoid duplicates if it's already a CRM task linked
-        if (tareas.some(t => t.outlookEventId === ev.id)) return '';
-        return `<div class="cal-event cal-event-outlook">${escHtml(ev.subject)}</div>`;
-      })
-    ].join('');
-
-    html += `
-      <div class="calendar-day ${isToday ? 'today' : ''}">
-        <div class="day-number">${day}</div>
-        <div class="calendar-events">${eventsHtml}</div>
-      </div>`;
-  }
-
-  grid.innerHTML = html;
-  status.innerHTML = `<span style="font-size:12px;color:var(--success)">✓ Sincronizado</span>`;
 }
 
 // ── INIT ──────────────────────────────────────────────────────
