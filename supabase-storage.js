@@ -282,7 +282,8 @@ function rowToTarea(r) {
     return {
         id: r.id, projectId: r.project_id, userId: r.user_id,
         description: r.description, dueDate: r.due_date,
-        status: r.status || 'pendiente', createdAt: r.created_at,
+        status: r.status || 'pendiente', outlookEventId: r.outlook_event_id || null,
+        createdAt: r.created_at,
     };
 }
 function tareaToRow(t) {
@@ -290,6 +291,7 @@ function tareaToRow(t) {
         id: t.id, project_id: t.projectId, user_id: t.userId,
         description: t.description, due_date: t.dueDate,
         status: t.status || 'pendiente',
+        outlook_event_id: t.outlookEventId || null,
     };
 }
 async function getTareas() {

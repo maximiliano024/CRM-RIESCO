@@ -2549,9 +2549,20 @@ async function saveTarea() {
   };
 
   await upsertTarea(t);
+
+  // Sincronización bidireccional con Outlook
+  if (localStorage.getItem('ms_graph_token') || APP.msToken) {
+    try {
+      await syncTareaToOutlook(t);
+    } catch (e) {
+      console.error('Error syncing to Outlook:', e);
+    }
+  }
+
   showToast(APP.editingTareaId ? 'Tarea actualizada' : 'Tarea creada', 'success');
   closeTareaModal();
   if (APP.currentView === 'project-detail') renderProjectTareas(APP.currentProjectId);
+  else if (APP.currentView === 'calendar') renderCalendar();
   else renderTareas(APP.currentCategory);
 }
 
@@ -2586,122 +2597,140 @@ async function reopenTarea(id) {
     else renderTareas(APP.currentCategory);
   }
 }
+// ── CALENDAR STATE & NAVIGATION ──────────────────────────────
+APP.calendarDate = new Date();
 
-// ── CALENDAR ──────────────────────────────────────────────────
+function changeMonth(dir) {
+  APP.calendarDate.setMonth(APP.calendarDate.getMonth() + dir);
+  renderCalendar();
+}
+
+async function syncTareaToOutlook(t) {
+  const token = APP.msToken || localStorage.getItem('ms_graph_token');
+  if (!token) return;
+
+  const projects = await getProjects();
+  const proj = projects.find(p => p.id === t.projectId);
+
+  const eventData = {
+    subject: `[CRM] ${t.description}${proj ? ` - ${proj.name}` : ''}`,
+    start: { dateTime: `${t.dueDate}T09:00:00`, timeZone: 'South America Standard Time' },
+    end: { dateTime: `${t.dueDate}T10:00:00`, timeZone: 'South America Standard Time' },
+    body: {
+      contentType: 'HTML',
+      content: `Tarea del CRM: ${t.description}<br>Status: ${t.status}<br>ID: ${t.id}`
+    }
+  };
+
+  // Si la tarea ya tiene un outlookEventId, actualizamos, si no creamos
+  const method = t.outlookEventId ? 'PATCH' : 'POST';
+  const url = t.outlookEventId
+    ? `https://graph.microsoft.com/v1.0/me/events/${t.outlookEventId}`
+    : `https://graph.microsoft.com/v1.0/me/events`;
+
+  const resp = await fetch(url, {
+    method,
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(eventData)
+  });
+
+  if (resp.ok) {
+    const data = await resp.json();
+    if (data.id && !t.outlookEventId) {
+      t.outlookEventId = data.id;
+      await upsertTarea(t); // Guardamos el ID del evento de Outlook
+    }
+  }
+}
 async function renderCalendar() {
-  const container = $('#calendar-events-list');
+  const grid = $('#calendar-grid');
+  const monthTitle = $('#calendar-month-year');
   const status = $('#calendar-status');
+  if (!grid) return;
 
-  if (!container) return;
+  const currentYear = APP.calendarDate.getFullYear();
+  const currentMonth = APP.calendarDate.getMonth();
 
-  // Usar token de memoria si existe, o buscar en localStorage
+  // Set month title
+  const monthName = new Intl.DateTimeFormat('es-CL', { month: 'long', year: 'numeric' }).format(APP.calendarDate);
+  if (monthTitle) monthTitle.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+
+  status.innerHTML = '<span style="font-size:12px;color:var(--text-muted)">Sincronizando...</span>';
+
+  // Get CRM Tareas and Outlook Events
+  let [tareas, projects] = await Promise.all([getTareas(), getProjects()]);
   const token = APP.msToken || localStorage.getItem('ms_graph_token');
 
   if (!token) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="8" x2="12" y2="12"></line>
-          <line x1="12" y1="16" x2="12.01" y2="16"></line>
-        </svg>
-        <p>No se pudo detectar una sesión de Microsoft activa.</p>
-        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Para ver tu calendario debes iniciar sesión con Outlook.</p>
-        <button class="btn btn-primary" onclick="doLoginMicrosoft()">Conectar con Outlook</button>
-      </div>`;
-    return;
+    status.innerHTML = '<span style="font-size:12px;color:var(--danger);cursor:pointer" onclick="doLoginMicrosoft()">⚠ Outlook no conectado (Conectar)</span>';
   }
 
-  try {
-    status.innerHTML = '<span style="font-size:12px;color:var(--text-muted)">Sincronizando...</span>';
-
-    // Fetch events from Microsoft Graph API
-    const response = await fetch('https://graph.microsoft.com/v1.0/me/events?$select=subject,start,end,location&$top=50&$orderby=start/dateTime asc', {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+  let outlookEvents = [];
+  if (token) {
+    try {
+      const startOfMonth = new Date(currentYear, currentMonth, 1).toISOString();
+      // ... fetching ...
+      const endOfMonth = new Date(currentYear, currentMonth + 1, 0).toISOString();
+      const resp = await fetch(`https://graph.microsoft.com/v1.0/me/calendarView?startDateTime=${startOfMonth}&endDateTime=${endOfMonth}&$top=100`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        outlookEvents = data.value || [];
       }
-    });
-
-    if (!response.ok) throw new Error('Error al obtener calendarios');
-
-    const data = await response.json();
-    const events = data.value || [];
-
-    if (events.length === 0) {
-      container.innerHTML = `
-        <div class="empty-state">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-          </svg>
-          <p>No tienes eventos próximos en tu calendario.</p>
-        </div>`;
-      status.innerHTML = '';
-      return;
+    } catch (e) {
+      console.warn('Outlook sync error:', e);
     }
-
-    // Group by date
-    const groups = {};
-    events.forEach(ev => {
-      const d = new Date(ev.start.dateTime);
-      const dateKey = d.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
-      if (!groups[dateKey]) groups[dateKey] = [];
-      groups[dateKey].push(ev);
-    });
-
-    container.innerHTML = Object.keys(groups).map(date => {
-      const dayEvents = groups[date].map(ev => {
-        const start = new Date(ev.start.dateTime);
-        const end = new Date(ev.end.dateTime);
-        const timeStr = start.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-        const durationMs = end - start;
-        const durationMins = Math.round(durationMs / 60000);
-        let durationStr = `${durationMins} min`;
-        if (durationMins >= 60) {
-          const h = Math.floor(durationMins / 60);
-          const m = durationMins % 60;
-          durationStr = m > 0 ? `${h}h ${m}m` : `${h}h`;
-        }
-
-        return `
-          <div class="calendar-event-card">
-            <div class="event-time-column">
-              <span class="event-start-time">${timeStr}</span>
-              <span class="event-duration">${durationStr}</span>
-            </div>
-            <div class="event-info-column">
-              <div class="event-subject">${escHtml(ev.subject)}</div>
-              ${ev.location && ev.location.displayName ? `
-                <div class="event-location">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                    <circle cx="12" cy="10" r="3"></circle>
-                  </svg>
-                  ${escHtml(ev.location.displayName)}
-                </div>
-              ` : ''}
-            </div>
-          </div>`;
-      }).join('');
-
-      return `
-        <div class="calendar-day-group">
-          <div class="calendar-date-header">${date}</div>
-          ${dayEvents}
-        </div>`;
-    }).join('');
-
-    status.innerHTML = `<span style="font-size:12px;color:var(--success)">✓ Actualizado a las ${new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}</span>`;
-
-  } catch (err) {
-    console.error('Calendar Error:', err);
-    container.innerHTML = `
-      <div class="empty-state">
-        <p style="color:var(--danger)">Ocurrió un error al conectar con Microsoft Graph API.</p>
-        <button class="btn btn-secondary btn-sm" onclick="renderCalendar()">Reintentar</button>
-      </div>`;
-    status.innerHTML = '';
   }
+
+  // Generate grid
+  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const prevMonthDays = new Date(currentYear, currentMonth, 0).getDate();
+
+  let html = '';
+
+  // Previous month days
+  for (let i = firstDay; i > 0; i--) {
+    const d = prevMonthDays - i + 1;
+    html += `<div class="calendar-day other-month"><div class="day-number">${d}</div></div>`;
+  }
+
+  // Current month days
+  const todayDate = new Date();
+  for (let day = 1; day <= daysInMonth; day++) {
+    const isToday = todayDate.getFullYear() === currentYear && todayDate.getMonth() === currentMonth && todayDate.getDate() === day;
+    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+    // Filter tasks for this day
+    const dayTareas = tareas.filter(t => t.dueDate === dateStr);
+    const dayOutlook = outlookEvents.filter(ev => ev.start.dateTime.startsWith(dateStr));
+
+    const eventsHtml = [
+      ...dayTareas.map(t => {
+        const proj = projects.find(p => p.id === t.projectId);
+        const typeClass = proj?.category === 'legal' ? 'cal-event-legal' : 'cal-event-inmo';
+        return `<div class="cal-event ${typeClass}" onclick="openTareaModal('${t.id}')">${escHtml(t.description)}</div>`;
+      }),
+      ...dayOutlook.map(ev => {
+        // Avoid duplicates if it's already a CRM task linked
+        if (tareas.some(t => t.outlookEventId === ev.id)) return '';
+        return `<div class="cal-event cal-event-outlook">${escHtml(ev.subject)}</div>`;
+      })
+    ].join('');
+
+    html += `
+      <div class="calendar-day ${isToday ? 'today' : ''}">
+        <div class="day-number">${day}</div>
+        <div class="calendar-events">${eventsHtml}</div>
+      </div>`;
+  }
+
+  grid.innerHTML = html;
+  status.innerHTML = `<span style="font-size:12px;color:var(--success)">✓ Sincronizado</span>`;
 }
 
 // ── INIT ──────────────────────────────────────────────────────
