@@ -57,7 +57,7 @@
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-logo">
         <span class="sidebar-brand">Riesco &amp; Asociados <small
-            style="font-size: 10px; opacity: 0.6; margin-left: 5px;">v1.3</small></span>
+            style="font-size: 10px; opacity: 0.6; margin-left: 5px;">v1.4</small></span>
       </div>
 
       <nav class="sidebar-nav" id="sidebar-nav">
@@ -367,31 +367,7 @@
       <!-- ── VIEW: PIPELINE ── -->
       <section class="view hidden" id="view-pipeline">
         <div class="pipeline-board" id="pipeline-board">
-          <div class="pipeline-col" data-stage="en-contacto">
-            <div class="pipeline-col-header"><span class="stage-dot" style="--c:#3b82f6"></span><span
-                class="stage-name">En Contacto</span><span class="stage-count" id="count-en-contacto">0</span></div>
-            <div class="pipeline-cards" id="col-en-contacto" data-stage="en-contacto"></div>
-            <button class="add-card-btn can-edit" data-stage="en-contacto">+ Agregar Proyecto</button>
-          </div>
-          <div class="pipeline-col" data-stage="evaluacion">
-            <div class="pipeline-col-header"><span class="stage-dot" style="--c:#8b5cf6"></span><span
-                class="stage-name">Evaluación</span><span class="stage-count" id="count-evaluacion">0</span></div>
-            <div class="pipeline-cards" id="col-evaluacion" data-stage="evaluacion"></div>
-            <button class="add-card-btn can-edit" data-stage="evaluacion">+ Agregar Proyecto</button>
-          </div>
-          <div class="pipeline-col" data-stage="en-negociacion">
-            <div class="pipeline-col-header"><span class="stage-dot" style="--c:#f59e0b"></span><span
-                class="stage-name">En Negociación</span><span class="stage-count" id="count-en-negociacion">0</span>
-            </div>
-            <div class="pipeline-cards" id="col-en-negociacion" data-stage="en-negociacion"></div>
-            <button class="add-card-btn can-edit" data-stage="en-negociacion">+ Agregar Proyecto</button>
-          </div>
-          <div class="pipeline-col" data-stage="cierre">
-            <div class="pipeline-col-header"><span class="stage-dot" style="--c:#10b981"></span><span
-                class="stage-name">Cierre</span><span class="stage-count" id="count-cierre">0</span></div>
-            <div class="pipeline-cards" id="col-cierre" data-stage="cierre"></div>
-            <button class="add-card-btn can-edit" data-stage="cierre">+ Agregar Proyecto</button>
-          </div>
+          <!-- Dinámico -->
         </div>
       </section>
 
@@ -815,7 +791,12 @@
         <div class="card">
           <div class="card-header">
             <h2 class="card-title">Listado de Tareas</h2>
-            <div style="display:flex;gap:8px;align-items:center;">
+            <div style="display:flex;gap:12px;align-items:center;">
+              <div class="view-toggle" id="tasks-view-toggle">
+                <button class="btn btn-sm btn-ghost active" data-mode="table">Lista</button>
+                <button class="btn btn-sm btn-ghost" data-mode="calendar">Calendario</button>
+              </div>
+              <div class="divider-v"></div>
               <select class="filter-select" id="tareas-filter-status">
                 <option value="">Todas las tareas</option>
                 <option value="pendiente" selected>Pendientes</option>
@@ -832,26 +813,49 @@
             </div>
           </div>
           <div class="card-body">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Estado</th>
-                  <th>Descripción</th>
-                  <th>Proyecto</th>
-                  <th>Asignado a</th>
-                  <th>Fecha Límite</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="tareas-table-body"></tbody>
-            </table>
-            <div class="empty-state hidden" id="tareas-empty">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <polyline points="9 11 12 14 22 4"></polyline>
-                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-              </svg>
-              <p>No hay tareas registradas.</p>
+            <!-- Table View -->
+            <div id="tareas-table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Estado</th>
+                    <th>Descripción</th>
+                    <th>Proyecto</th>
+                    <th>Asignado a</th>
+                    <th>Fecha Límite</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tareas-table-body"></tbody>
+              </table>
+              <div class="empty-state hidden" id="tareas-empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <polyline points="9 11 12 14 22 4"></polyline>
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                </svg>
+                <p>No hay tareas registradas.</p>
+              </div>
             </div>
+
+            <!-- Calendar View -->
+            <div id="tareas-calendar-container" class="hidden">
+              <div class="calendar-nav">
+                <button class="btn btn-ghost btn-sm" id="btn-task-cal-prev">&lt;</button>
+                <h3 id="task-cal-title">Mes Año</h3>
+                <button class="btn btn-ghost btn-sm" id="btn-task-cal-next">&gt;</button>
+              </div>
+              <div class="calendar-grid-header">
+                <div>Lun</div>
+                <div>Mar</div>
+                <div>Mié</div>
+                <div>Jue</div>
+                <div>Vie</div>
+                <div>Sáb</div>
+                <div>Dom</div>
+              </div>
+              <div class="calendar-grid" id="task-calendar-grid"></div>
+            </div>
+
           </div>
         </div>
       </section>

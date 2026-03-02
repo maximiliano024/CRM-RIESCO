@@ -25,14 +25,24 @@ const APP = {
   locationMapMarker: null,
   tempLatLng: null,
   chart: null,
+  taskViewMode: 'table', // 'table' | 'calendar'
+  calendarDate: new Date(),
 };
 
-const STAGES = [
-  { id: 'en-contacto', label: 'En Contacto', color: '#3b82f6' },
-  { id: 'evaluacion', label: 'Evaluación', color: '#8b5cf6' },
-  { id: 'en-negociacion', label: 'En Negociación', color: '#f59e0b' },
-  { id: 'cierre', label: 'Cierre', color: '#10b981' },
-];
+const STAGES = {
+  legal: [
+    { id: 'en-contacto', label: 'En Contacto', color: '#3b82f6' },
+    { id: 'evaluacion', label: 'Evaluación', color: '#8b5cf6' },
+    { id: 'en-negociacion', label: 'En Negociación', color: '#f59e0b' },
+    { id: 'cierre', label: 'Cierre', color: '#10b981' },
+  ],
+  inmobiliario: [
+    { id: 'en-contacto', label: 'En Contacto', color: '#3b82f6' },
+    { id: 'evaluacion', label: 'Evaluación', color: '#8b5cf6' },
+    { id: 'en-negociacion', label: 'En Negociación', color: '#f59e0b' },
+    { id: 'cierre', label: 'Cierre', color: '#10b981' },
+  ]
+};
 
 const CATEGORIES = {
   legal: { label: 'Legal', icon: '⚖️', color: '#ea580c' },
@@ -65,7 +75,10 @@ function getFileIcon(name) {
   const m = { pdf: { icon: '📄', bg: 'rgba(239,68,68,0.15)' }, doc: { icon: '📝', bg: 'rgba(59,130,246,0.15)' }, docx: { icon: '📝', bg: 'rgba(59,130,246,0.15)' }, xls: { icon: '📊', bg: 'rgba(16,185,129,0.15)' }, xlsx: { icon: '📊', bg: 'rgba(16,185,129,0.15)' }, csv: { icon: '📊', bg: 'rgba(16,185,129,0.15)' }, jpg: { icon: '🖼️', bg: 'rgba(245,158,11,0.15)' }, jpeg: { icon: '🖼️', bg: 'rgba(245,158,11,0.15)' }, png: { icon: '🖼️', bg: 'rgba(245,158,11,0.15)' }, ppt: { icon: '📽️', bg: 'rgba(245,158,11,0.15)' }, pptx: { icon: '📽️', bg: 'rgba(245,158,11,0.15)' }, zip: { icon: '🗜️', bg: 'rgba(139,92,246,0.15)' }, rar: { icon: '🗜️', bg: 'rgba(139,92,246,0.15)' } };
   return m[ext] || { icon: '📎', bg: 'rgba(156,163,175,0.15)' };
 }
-function getStageInfo(id) { return STAGES.find(s => s.id === id) || STAGES[0]; }
+function getStageInfo(id, category = 'legal') {
+  const list = STAGES[category] || STAGES.legal;
+  return list.find(s => s.id === id) || list[0];
+}
 function today() { return new Date().toISOString().slice(0, 10); }
 function escHtml(str) {
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
@@ -189,7 +202,7 @@ function bootApp(user) {
 }
 
 // ── ROUTING ──────────────────────────────────────────────────
-function showView(viewId, title, category) {
+async function showView(viewId, title, category) {
   $$('.view').forEach(v => v.classList.add('hidden'));
   const view = $(`#view-${viewId}`);
   if (view) view.classList.remove('hidden');
@@ -238,15 +251,15 @@ function showView(viewId, title, category) {
     // keep whichever was previously active
   }
 
-  if (viewId === 'dashboard') renderDashboard();
-  if (viewId === 'pipeline') renderPipeline(category);
-  if (viewId === 'projects') renderProjectsTable(category);
-  if (viewId === 'gastos-global') renderGastosGlobal(category);
-  if (viewId === 'gastos-review') renderGastosReview();
-  if (viewId === 'cobranza') renderCobranza();
-  if (viewId === 'clientes') renderClientes();
-  if (viewId === 'admin') renderAdminPanel();
-  if (viewId === 'tareas') renderTareas(category);
+  if (viewId === 'dashboard') await renderDashboard();
+  if (viewId === 'pipeline') await renderPipeline(category);
+  if (viewId === 'projects') await renderProjectsTable(category);
+  if (viewId === 'gastos-global') await renderGastosGlobal(category);
+  if (viewId === 'gastos-review') await renderGastosReview();
+  if (viewId === 'cobranza') await renderCobranza();
+  if (viewId === 'clientes') await renderClientes();
+  if (viewId === 'admin') await renderAdminPanel();
+  if (viewId === 'tareas') await renderTareas(category);
 }
 
 // ── SIDEBAR COLLAPSIBLE GROUPS ────────────────────────────────
@@ -334,7 +347,13 @@ async function openProjectModal(projectId = null, defaultStage = null) {
     sel.value = p.client || '';
     $('#input-category').value = p.category || 'legal';
     $('#input-subcategory').value = p.subcategory || '';
-    $('#input-stage').value = p.stage || 'en-contacto';
+
+    // Dynamic stages
+    const cat = p.category || 'legal';
+    const stages = STAGES[cat] || STAGES.legal;
+    $('#input-stage').innerHTML = stages.map(s => `<option value="${s.id}">${s.label}</option>`).join('');
+    $('#input-stage').value = p.stage || stages[0].id;
+
     $('#input-value').value = p.value || '';
     $('#input-date').value = p.date || '';
     $('#input-responsible').value = p.responsible || '';
@@ -348,9 +367,15 @@ async function openProjectModal(projectId = null, defaultStage = null) {
     $('#modal-project-title').textContent = 'Nuevo Proyecto';
     $('#input-name').value = '';
     sel.value = '';
-    $('#input-category').value = APP.currentCategory || 'legal';
+    const cat = APP.currentCategory || 'legal';
+    $('#input-category').value = cat;
     $('#input-subcategory').value = APP.currentSubcategory || '';
-    $('#input-stage').value = defaultStage || 'en-contacto';
+
+    // Dynamic stages
+    const stages = STAGES[cat] || STAGES.legal;
+    $('#input-stage').innerHTML = stages.map(s => `<option value="${s.id}">${s.label}</option>`).join('');
+    $('#input-stage').value = defaultStage || stages[0].id;
+
     $('#input-value').value = '';
     $('#input-date').value = today();
     $('#input-responsible').value = '';
@@ -358,12 +383,18 @@ async function openProjectModal(projectId = null, defaultStage = null) {
     $('#input-description').value = '';
   }
 
-  const toggleSubcategory = () => {
-    $('#group-subcategory').classList.toggle('hidden', $('#input-category').value !== 'inmobiliario');
+  const onCategoryChange = () => {
+    const cat = $('#input-category').value;
+    $('#group-subcategory').classList.toggle('hidden', cat !== 'inmobiliario');
+    const stages = STAGES[cat] || STAGES.legal;
+    const currentStage = $('#input-stage').value;
+    $('#input-stage').innerHTML = stages.map(s => `<option value="${s.id}">${s.label}</option>`).join('');
+    if (stages.some(s => s.id === currentStage)) $('#input-stage').value = currentStage;
   };
-  $('#input-category').removeEventListener('change', toggleSubcategory);
-  $('#input-category').addEventListener('change', toggleSubcategory);
-  toggleSubcategory();
+
+  $('#input-category').removeEventListener('change', onCategoryChange);
+  $('#input-category').addEventListener('change', onCategoryChange);
+  onCategoryChange();
 
   $('#modal-project').classList.remove('hidden');
   setTimeout(() => $('#input-name').focus(), 100);
@@ -443,11 +474,11 @@ async function renderDashboard() {
   ['legal', 'inmobiliario'].forEach(cat => {
     if (!accessible.includes(cat)) return;
     const catProjects = projects.filter(p => p.category === cat);
-    const prefix = cat === 'legal' ? 'legal' : 'inmo';
-    const totalEl = $(`#dash-${prefix}-total`);
+    const prefix = cat === 'legal' ? 'leg' : 'inmo';
+    const totalEl = $(`#stat-${prefix}-total`);
     if (totalEl) totalEl.textContent = `${catProjects.length} proyecto${catProjects.length !== 1 ? 's' : ''}`;
 
-    STAGES.forEach(s => {
+    (STAGES[cat] || []).forEach(s => {
       const el = $(`#stat-${prefix}-${s.id}`);
       if (el) el.textContent = catProjects.filter(p => p.stage === s.id).length;
     });
@@ -487,7 +518,9 @@ function renderPipelineChart(projects) {
   if (!ctx) return;
   if (APP.chart) { APP.chart.destroy(); APP.chart = null; }
 
-  const data = STAGES.map(s => projects.filter(p => p.stage === s.id).length);
+  // For the dashboard doughnut, we use a unified set of stages (since labels are the same for now)
+  const unifiedStages = STAGES.legal;
+  const data = unifiedStages.map(s => projects.filter(p => p.stage === s.id).length);
   const total = data.reduce((a, b) => a + b, 0);
 
   if (total === 0) {
@@ -499,8 +532,8 @@ function renderPipelineChart(projects) {
   APP.chart = new Chart(document.getElementById('pipeline-chart'), {
     type: 'doughnut',
     data: {
-      labels: STAGES.map(s => s.label),
-      datasets: [{ data, backgroundColor: STAGES.map(s => s.color + 'cc'), borderColor: STAGES.map(s => s.color), borderWidth: 2, hoverOffset: 8 }],
+      labels: unifiedStages.map(s => s.label),
+      datasets: [{ data, backgroundColor: unifiedStages.map(s => s.color + 'cc'), borderColor: unifiedStages.map(s => s.color), borderWidth: 2, hoverOffset: 8 }],
     },
     options: {
       responsive: true, maintainAspectRatio: true, cutout: '65%',
@@ -518,8 +551,25 @@ async function renderPipeline(category) {
   let projects = allProjects.filter(p => p.category === category);
   const user = getCurrentUser();
   const isReadOnly = !(user?.role === 'admin' || user?.role === 'normal');
+  const stages = STAGES[category] || STAGES.legal;
 
-  STAGES.forEach(s => {
+  const board = $('#pipeline-board');
+  if (!board) return;
+
+  // Re-build board dynamically to allow independent stages per category
+  board.innerHTML = stages.map(s => `
+    <div class="pipeline-col" data-stage="${s.id}">
+      <div class="pipeline-col-header">
+        <span class="stage-dot" style="--c:${s.color}"></span>
+        <span class="stage-name">${s.label}</span>
+        <span class="stage-count" id="count-${s.id}">0</span>
+      </div>
+      <div class="pipeline-cards" id="col-${s.id}" data-stage="${s.id}"></div>
+      ${!isReadOnly ? `<button class="add-card-btn can-edit" onclick="openProjectModal(null, '${s.id}')">+ Agregar Proyecto</button>` : ''}
+    </div>
+  `).join('');
+
+  stages.forEach(s => {
     const col = $(`#col-${s.id}`);
     const count = $(`#count-${s.id}`);
     if (!col) return;
@@ -573,7 +623,7 @@ async function renderClientProjectsTable(clientId) {
   empty.classList.add('hidden');
 
   tbody.innerHTML = projects.map(p => {
-    const stage = getStageInfo(p.stage);
+    const stage = getStageInfo(p.stage, p.category);
     const catInfo = CATEGORIES[p.category] || {};
     return `<tr>
       <td style="font-weight:600;cursor:pointer;color:var(--text-primary)" onclick="openProjectDetail('${p.id}')">${escHtml(p.name)}</td>
@@ -632,7 +682,7 @@ async function renderProjectsTable(category, filter = '') {
   const canEdit = user?.role === 'admin' || user?.role === 'normal';
 
   tbody.innerHTML = projects.map(p => {
-    const s = getStageInfo(p.stage);
+    const s = getStageInfo(p.stage, p.category);
     const cat = CATEGORIES[p.category] || CATEGORIES.legal;
     return `<tr>
       <td style="font-weight:600;color:var(--text-primary);cursor:pointer" onclick="openProjectDetail('${p.id}')">
@@ -667,7 +717,7 @@ async function openProjectDetail(id) {
 
   APP.currentProjectId = id;
   const cat = CATEGORIES[p.category] || CATEGORIES.legal;
-  const stage = getStageInfo(p.stage);
+  const stage = getStageInfo(p.stage, p.category);
 
   showView('project-detail', p.name, p.category);
 
@@ -738,8 +788,9 @@ function initProjectMap(project) {
   }
 }
 
-function openLocationModal() {
-  const p = getProjects().find(pr => pr.id === APP.currentProjectId);
+async function openLocationModal() {
+  const projects = await getProjects();
+  const p = projects.find(pr => pr.id === APP.currentProjectId);
   if (!p) return;
   $('#modal-location').classList.remove('hidden');
 
@@ -1163,10 +1214,11 @@ async function openClientDetail(clientId) {
   };
 }
 
-function openClientModal(clientId = null) {
+async function openClientModal(clientId = null) {
   APP.editingClientId = clientId;
   if (clientId) {
-    const c = getClients().find(c => c.id === clientId);
+    const clients = await getClients();
+    const c = clients.find(c => c.id === clientId);
     if (!c) return;
     $('#modal-client-title').textContent = 'Editar Cliente';
     $('#client-name').value = c.name || '';
@@ -1996,7 +2048,11 @@ function activateTab(tabId) {
   $$('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
   $$('.tab-content').forEach(c => { c.classList.toggle('hidden', c.id !== tabId); c.classList.toggle('active', c.id === tabId); });
   if (tabId === 'tab-resumen' && APP.currentProjectId) {
-    setTimeout(() => { const p = getProjects().find(pr => pr.id === APP.currentProjectId); if (p) initProjectMap(p); }, 100);
+    setTimeout(async () => {
+      const projects = await getProjects();
+      const p = projects.find(pr => pr.id === APP.currentProjectId);
+      if (p) initProjectMap(p);
+    }, 100);
   }
 }
 
@@ -2033,26 +2089,28 @@ async function renderAdminPanel() {
   }).join('');
 
   // System info
+  const [allGastos, allFiles, allComments] = await Promise.all([getGastos(), getFiles(), getComments()]);
   const sysInfo = [
     { label: 'Total usuarios', value: users.length },
     { label: 'Total proyectos', value: projects.length },
     { label: 'Proyectos Legales', value: projects.filter(p => p.category === 'legal').length },
     { label: 'Proyectos Inmobi.', value: projects.filter(p => p.category === 'inmobiliario').length },
-    { label: 'Gastos registrados', value: getGastos().length },
-    { label: 'Archivos adjuntos', value: getFiles().length },
-    { label: 'Comentarios', value: getComments().length },
+    { label: 'Gastos registrados', value: allGastos.length },
+    { label: 'Archivos adjuntos', value: allFiles.length },
+    { label: 'Comentarios', value: allComments.length },
   ];
   $('#admin-sys-info').innerHTML = sysInfo.map(i => `<div class="info-item"><span class="info-label">${i.label}</span><span class="info-value" style="font-weight:700">${i.value}</span></div>`).join('');
 }
 
 // ── USER MODAL ────────────────────────────────────────────────
-function openUserModal(userId = null) {
+async function openUserModal(userId = null) {
   APP.editingUserId = userId;
   const err = $('#user-form-error');
   err.classList.add('hidden');
 
   if (userId) {
-    const u = getUsers().find(u => u.id === userId);
+    const users = await getUsers();
+    const u = users.find(u => u.id === userId);
     if (!u) return;
     $('#modal-user-title').textContent = 'Editar Usuario';
     $('#user-name').value = u.name || '';
@@ -2411,10 +2469,86 @@ async function deleteCobro(id) {
   renderCobranza();
 }
 
+async function renderTaskCalendar(category) {
+  const [tareas, projects] = await Promise.all([getTareas(), getProjects()]);
+  const user = getCurrentUser();
+
+  // Filter tasks: assigned to user AND (if category exists, match project category)
+  let filtered = tareas.filter(t => t.userId === user?.id);
+  if (category) {
+    const projIds = projects.filter(p => p.category === category).map(p => p.id);
+    filtered = filtered.filter(t => projIds.includes(t.projectId));
+  }
+
+  const container = $('#task-calendar-grid');
+  const title = $('#task-cal-title');
+  if (!container || !title) return;
+
+  const date = APP.calendarDate;
+  const month = date.getMonth();
+  const year = date.getFullYear();
+
+  const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+  title.textContent = `${monthNames[month]} ${year}`;
+
+  // Calendar logic
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+
+  let startDay = firstDay.getDay();
+  if (startDay === 0) startDay = 7;
+  startDay--;
+
+  const daysInMonth = lastDay.getDate();
+  const prevLastDay = new Date(year, month, 0).getDate();
+
+  let html = '';
+
+  for (let i = startDay; i > 0; i--) {
+    const d = prevLastDay - i + 1;
+    html += `<div class="calendar-day prev-month"><div class="calendar-day-num">${d}</div></div>`;
+  }
+
+  const todayStr = today();
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const isToday = dStr === todayStr;
+    const dayTasks = filtered.filter(t => t.dueDate === dStr);
+
+    let taskHtml = dayTasks.map(t => {
+      const p = projects.find(proj => proj.id === t.projectId);
+      const catClass = p?.category || '';
+      const compClass = t.status === 'completada' ? 'completada' : '';
+      return `<button class="cal-task-item ${catClass} ${compClass}" onclick="event.stopPropagation();openTareaModal('${t.id}')" title="${escHtml(t.description)}">${escHtml(t.description)}</button>`;
+    }).join('');
+
+    html += `
+      <div class="calendar-day ${isToday ? 'today' : ''}" onclick="APP.calendarDate = new Date('${dStr}'); openTareaModal();">
+        <div class="calendar-day-num">${d}</div>
+        <div class="calendar-tasks">${taskHtml}</div>
+      </div>`;
+  }
+
+  const remaining = 42 - (startDay + daysInMonth);
+  for (let i = 1; i <= remaining; i++) {
+    html += `<div class="calendar-day next-month"><div class="calendar-day-num">${i}</div></div>`;
+  }
+
+  container.innerHTML = html;
+}
+
 // ── TAREAS (INMOBILIARIO) ───────────────────────────────────
 APP.editingTareaId = null;
 
 async function renderTareas(category) {
+  const mode = APP.taskViewMode || 'table';
+  $('#tareas-table-container')?.classList.toggle('hidden', mode !== 'table');
+  $('#tareas-calendar-container')?.classList.toggle('hidden', mode !== 'calendar');
+
+  if (mode === 'calendar') {
+    return renderTaskCalendar(category);
+  }
+
   let [tareas, projects, users] = await Promise.all([getTareas(), getProjects(), getUsers()]);
 
   if (category) {
@@ -2431,7 +2565,7 @@ async function renderTareas(category) {
   }
 
   if (tareas.length === 0) {
-    tbody.innerHTML = '';
+    if (tbody) tbody.innerHTML = '';
     empty.classList.remove('hidden');
     return;
   }
@@ -2666,8 +2800,6 @@ async function init() {
   $('#modal-project-save').addEventListener('click', saveProject);
   $('#modal-project').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeProjectModal(); });
 
-  // Pipeline column "add" buttons
-  $$('.add-card-btn').forEach(btn => btn.addEventListener('click', () => openProjectModal(null, btn.dataset.stage)));
 
   // Back button
   $('#btn-back').addEventListener('click', () => {
@@ -2800,6 +2932,23 @@ async function init() {
   });
 
   // Tareas
+  $('#tasks-view-toggle')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    APP.taskViewMode = btn.dataset.mode;
+    $$('#tasks-view-toggle .btn').forEach(b => b.classList.toggle('active', b === btn));
+    renderTareas(APP.currentCategory);
+  });
+  $('#btn-task-cal-prev')?.addEventListener('click', () => {
+    APP.calendarDate.setMonth(APP.calendarDate.getMonth() - 1);
+    renderTaskCalendar(APP.currentCategory);
+  });
+  $('#btn-task-cal-next')?.addEventListener('click', () => {
+    APP.calendarDate.setMonth(APP.calendarDate.getMonth() + 1);
+    renderTaskCalendar(APP.currentCategory);
+  });
+  $('#tareas-filter-status')?.addEventListener('change', () => renderTareas(APP.currentCategory));
+
   $('#btn-add-tarea')?.addEventListener('click', () => openTareaModal());
   $('#btn-project-add-tarea')?.addEventListener('click', () => {
     openTareaModal();
