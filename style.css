@@ -2817,9 +2817,43 @@ body.read-only .add-card-btn {
 }
 
 /* ── CALENDAR VIEW ────────────────────────────────────────── */
-.calendar-container {
+#view-calendar {
+  flex: 1;
+  display: flex !important;
+  flex-direction: column;
+  height: calc(100vh - var(--header-h));
+  overflow: hidden;
   padding: 20px;
-  min-height: 400px;
+}
+
+#view-calendar.hidden {
+  display: none !important;
+}
+
+.calendar-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow: hidden;
+}
+
+.calendar-container>.card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin-bottom: 0;
+}
+
+.calendar-container .card-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+}
+
+#calendar-events-list {
+  min-height: 200px;
 }
 
 .calendar-event-card {
