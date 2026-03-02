@@ -141,6 +141,7 @@ async function doLoginMicrosoft() {
 
 async function doLogout() {
   clearSession();
+  localStorage.removeItem('ms_graph_token'); // Limpiar token de Microsoft
   await _supabase.auth.signOut();
   location.reload();
 }
@@ -2591,7 +2592,10 @@ async function renderCalendar() {
   // Get Supabase session to find provider_token (Microsoft Graph)
   const { data: { session } } = await _supabase.auth.getSession();
 
-  if (!session || !session.provider_token) {
+  // Supabase no persiste provider_token en recargas, buscamos en localStorage si no está
+  const token = session?.provider_token || localStorage.getItem('ms_graph_token');
+
+  if (!token) {
     container.innerHTML = `
       <div class="empty-state">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -2612,7 +2616,7 @@ async function renderCalendar() {
     // Fetch events from Microsoft Graph API
     const response = await fetch('https://graph.microsoft.com/v1.0/me/events?$select=subject,start,end,location&$top=50&$orderby=start/dateTime asc', {
       headers: {
-        'Authorization': `Bearer ${session.provider_token}`,
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     });
@@ -2722,6 +2726,11 @@ async function init() {
           access: ['legal', 'inmobiliario']
         };
         await upsertUser(dbUser);
+      }
+
+      // Persistir provider_token (Microsoft Graph) si existe en la sesión
+      if (session.provider_token) {
+        localStorage.setItem('ms_graph_token', session.provider_token);
       }
 
       setCurrentUser(dbUser);
