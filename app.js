@@ -4,7 +4,7 @@
    ============================================================ */
 'use strict';
 
-console.log('CRM Riesco y Asociados - app.js v1.2.1 loaded (Fresh Start)');
+console.log('CRM Riesco y Asociados - app.js v1.3 loaded (Clean State)');
 
 // ── STATE ────────────────────────────────────────────────────
 const APP = {
@@ -234,8 +234,6 @@ function showView(viewId, title, category) {
     $('#nav-inmo-gastos')?.classList.add('active');
   } else if (viewId === 'tareas' && category === 'inmobiliario') {
     $('#nav-inmo-tareas')?.classList.add('active');
-  } else if (viewId === 'calendar') {
-    $('#nav-calendar')?.classList.add('active');
   } else if (viewId === 'project-detail') {
     // keep whichever was previously active
   }
@@ -249,7 +247,6 @@ function showView(viewId, title, category) {
   if (viewId === 'clientes') renderClientes();
   if (viewId === 'admin') renderAdminPanel();
   if (viewId === 'tareas') renderTareas(category);
-  if (viewId === 'calendar') renderCalendar();
 }
 
 // ── SIDEBAR COLLAPSIBLE GROUPS ────────────────────────────────
@@ -2820,11 +2817,6 @@ async function init() {
   $('#modal-tarea')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeTareaModal(); });
   $('#tareas-filter-status')?.addEventListener('change', () => renderTareas(APP.currentCategory));
 
-  // Calendar
-  $('#nav-calendar')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    showView('calendar', 'Calendario');
-  });
 }
 
 document.addEventListener('DOMContentLoaded', init);
