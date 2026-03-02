@@ -2589,16 +2589,25 @@ async function reopenTarea(id) {
 
 // ── CALENDAR ──────────────────────────────────────────────────
 async function renderCalendar() {
+  console.log('--- Render Calendar Start ---');
   const container = $('#calendar-events-list');
   const status = $('#calendar-status');
 
+  if (!container) {
+    console.error('Calendar container not found!');
+    return;
+  }
+
   // Get Supabase session to find provider_token (Microsoft Graph)
   const { data: { session } } = await _supabase.auth.getSession();
+  console.log('Supabase session present:', !!session);
 
   // Supabase no persiste provider_token en recargas, buscamos en localStorage si no está
   const token = session?.provider_token || localStorage.getItem('ms_graph_token');
+  console.log('MS Graph token found:', !!token);
 
   if (!token) {
+    console.warn('No MS Graph token found. Showing login prompt.');
     container.innerHTML = `
       <div class="empty-state">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -2628,6 +2637,7 @@ async function renderCalendar() {
 
     const data = await response.json();
     const events = data.value || [];
+    console.log('Events fetched:', events.length);
 
     if (events.length === 0) {
       container.innerHTML = `

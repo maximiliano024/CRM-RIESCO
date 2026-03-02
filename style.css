@@ -2817,6 +2817,11 @@ body.read-only .add-card-btn {
 }
 
 /* ── CALENDAR VIEW ────────────────────────────────────────── */
+.calendar-container {
+  padding: 20px;
+  min-height: 400px;
+}
+
 .calendar-event-card {
   display: flex;
   gap: 20px;
