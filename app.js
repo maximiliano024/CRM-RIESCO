@@ -2589,10 +2589,14 @@ async function reopenTarea(id) {
 
 // ── CALENDAR ──────────────────────────────────────────────────
 async function renderCalendar() {
+  console.log('--- rendering calendar view ---');
   const container = $('#calendar-events-list');
   const status = $('#calendar-status');
 
-  if (!container) return;
+  if (!container) {
+    console.error('CRITICAL: #calendar-events-list not found in DOM');
+    return;
+  }
 
   // Get Supabase session to find provider_token (Microsoft Graph)
   const { data: { session } } = await _supabase.auth.getSession();
