@@ -2597,9 +2597,6 @@ async function renderCalendar() {
   // Usar token de memoria si existe, o buscar en localStorage
   const token = APP.msToken || localStorage.getItem('ms_graph_token');
 
-  // Supabase no persiste provider_token en recargas, buscamos en localStorage si no está
-  const token = session?.provider_token || localStorage.getItem('ms_graph_token');
-
   if (!token) {
     container.innerHTML = `
       <div class="empty-state">
