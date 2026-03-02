@@ -57,7 +57,7 @@
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-logo">
         <span class="sidebar-brand">Riesco &amp; Asociados <small
-            style="font-size: 10px; opacity: 0.6; margin-left: 5px;">v1.1</small></span>
+            style="font-size: 10px; opacity: 0.6; margin-left: 5px;">v1.2.1</small></span>
       </div>
 
       <nav class="sidebar-nav" id="sidebar-nav">
@@ -173,6 +173,7 @@
           </svg>
           <span>Calendario</span>
         </a>
+
 
         <!-- ADMIN -->
         <a href="#" class="nav-item nav-admin-only" data-view="admin" id="nav-admin">
@@ -771,68 +772,6 @@
           </div>
         </div>
 
-        <!-- VIEW: CALENDAR -->
-        <section class="view hidden" id="view-calendar">
-          <div class="calendar-layout">
-            <div class="calendar-sidebar">
-              <div class="card">
-                <div class="card-header">
-                  <h3 class="card-title">Leyenda</h3>
-                </div>
-                <div class="card-body">
-                  <div class="legend-list">
-                    <div class="legend-item"><span class="dot dot-legal"></span> Legal</div>
-                    <div class="legend-item"><span class="dot dot-inmo"></span> Inmobiliario</div>
-                    <div class="legend-item"><span class="dot dot-outlook"></span> Outlook</div>
-                  </div>
-                </div>
-              </div>
-              <button class="btn btn-primary" style="width:100%; margin-top:15px;" onclick="openTareaModal()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                Nueva Tarea
-              </button>
-            </div>
-
-            <div class="calendar-main">
-              <div class="card">
-                <div class="card-header calendar-header-controls">
-                  <div class="calendar-nav-group">
-                    <button class="btn-icon" onclick="changeMonth(-1)">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M15 18l-6-6 6-6" />
-                      </svg>
-                    </button>
-                    <h2 class="card-title" id="calendar-month-year">Marzo 2026</h2>
-                    <button class="btn-icon" onclick="changeMonth(1)">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M9 18l6-6-6-6" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div class="calendar-actions">
-                    <div id="calendar-status"></div>
-                    <button class="btn-secondary btn-sm" onclick="renderCalendar()">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path
-                          d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-                <div class="card-body no-padding">
-                  <div class="calendar-grid-header">
-                    <span>Dom</span><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span>
-                  </div>
-                  <div class="calendar-grid" id="calendar-grid">
-                    <!-- Days injected by JS -->
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
 
         <!-- TAB: Cobros de Proyectos -->
         <div id="cob-panel-cobros" class="hidden">
