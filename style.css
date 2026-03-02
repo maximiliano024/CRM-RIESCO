@@ -2824,6 +2824,8 @@ body.read-only .add-card-btn {
   height: calc(100vh - var(--header-h));
   overflow: hidden;
   padding: 20px;
+  background: #f0f4f8;
+  /* Visible debug background */
 }
 
 #view-calendar.hidden {
@@ -2844,6 +2846,9 @@ body.read-only .add-card-btn {
   flex-direction: column;
   overflow: hidden;
   margin-bottom: 0;
+  border: 1px solid var(--accent);
+  /* Debug border */
+  background: white;
 }
 
 .calendar-container .card-body {
