@@ -228,6 +228,8 @@ function showView(viewId, title, category) {
     $('#nav-inmo-gastos')?.classList.add('active');
   } else if (viewId === 'tareas' && category === 'inmobiliario') {
     $('#nav-inmo-tareas')?.classList.add('active');
+  } else if (viewId === 'calendar') {
+    $('#nav-calendar')?.classList.add('active');
   } else if (viewId === 'project-detail') {
     // keep whichever was previously active
   }
@@ -241,6 +243,7 @@ function showView(viewId, title, category) {
   if (viewId === 'clientes') renderClientes();
   if (viewId === 'admin') renderAdminPanel();
   if (viewId === 'tareas') renderTareas(category);
+  if (viewId === 'calendar') renderCalendar();
 }
 
 // ── SIDEBAR COLLAPSIBLE GROUPS ────────────────────────────────
@@ -2580,6 +2583,121 @@ async function reopenTarea(id) {
   }
 }
 
+// ── CALENDAR ──────────────────────────────────────────────────
+async function renderCalendar() {
+  const container = $('#calendar-events-list');
+  const status = $('#calendar-status');
+
+  // Get Supabase session to find provider_token (Microsoft Graph)
+  const { data: { session } } = await _supabase.auth.getSession();
+
+  if (!session || !session.provider_token) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <p>No se pudo detectar una sesión de Microsoft activa.</p>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Para ver tu calendario debes iniciar sesión con Outlook.</p>
+        <button class="btn btn-primary" onclick="doLoginMicrosoft()">Conectar con Outlook</button>
+      </div>`;
+    return;
+  }
+
+  try {
+    status.innerHTML = '<span style="font-size:12px;color:var(--text-muted)">Sincronizando...</span>';
+
+    // Fetch events from Microsoft Graph API
+    const response = await fetch('https://graph.microsoft.com/v1.0/me/events?$select=subject,start,end,location&$top=50&$orderby=start/dateTime asc', {
+      headers: {
+        'Authorization': `Bearer ${session.provider_token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) throw new Error('Error al obtener calendarios');
+
+    const data = await response.json();
+    const events = data.value || [];
+
+    if (events.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          </svg>
+          <p>No tienes eventos próximos en tu calendario.</p>
+        </div>`;
+      status.innerHTML = '';
+      return;
+    }
+
+    // Group by date
+    const groups = {};
+    events.forEach(ev => {
+      const d = new Date(ev.start.dateTime);
+      const dateKey = d.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
+      if (!groups[dateKey]) groups[dateKey] = [];
+      groups[dateKey].push(ev);
+    });
+
+    container.innerHTML = Object.keys(groups).map(date => {
+      const dayEvents = groups[date].map(ev => {
+        const start = new Date(ev.start.dateTime);
+        const end = new Date(ev.end.dateTime);
+        const timeStr = start.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+        const durationMs = end - start;
+        const durationMins = Math.round(durationMs / 60000);
+        let durationStr = `${durationMins} min`;
+        if (durationMins >= 60) {
+          const h = Math.floor(durationMins / 60);
+          const m = durationMins % 60;
+          durationStr = m > 0 ? `${h}h ${m}m` : `${h}h`;
+        }
+
+        return `
+          <div class="calendar-event-card">
+            <div class="event-time-column">
+              <span class="event-start-time">${timeStr}</span>
+              <span class="event-duration">${durationStr}</span>
+            </div>
+            <div class="event-info-column">
+              <div class="event-subject">${escHtml(ev.subject)}</div>
+              ${ev.location && ev.location.displayName ? `
+                <div class="event-location">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                  </svg>
+                  ${escHtml(ev.location.displayName)}
+                </div>
+              ` : ''}
+            </div>
+          </div>`;
+      }).join('');
+
+      return `
+        <div class="calendar-day-group">
+          <div class="calendar-date-header">${date}</div>
+          ${dayEvents}
+        </div>`;
+    }).join('');
+
+    status.innerHTML = `<span style="font-size:12px;color:var(--success)">✓ Actualizado a las ${new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}</span>`;
+
+  } catch (err) {
+    console.error('Calendar Error:', err);
+    container.innerHTML = `
+      <div class="empty-state">
+        <p style="color:var(--danger)">Ocurrió un error al conectar con Microsoft Graph API.</p>
+        <button class="btn btn-secondary btn-sm" onclick="renderCalendar()">Reintentar</button>
+      </div>`;
+    status.innerHTML = '';
+  }
+}
+
 // ── INIT ──────────────────────────────────────────────────────
 async function init() {
   await seedAdmin();
@@ -2800,6 +2918,12 @@ async function init() {
   $('#modal-tarea-save').addEventListener('click', saveTarea);
   $('#modal-tarea').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeTareaModal(); });
   $('#tareas-filter-status').addEventListener('change', () => renderTareas(APP.currentCategory));
+
+  // Calendar
+  $('#nav-calendar')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    showView('calendar', 'Calendario');
+  });
 }
 
 document.addEventListener('DOMContentLoaded', init);
