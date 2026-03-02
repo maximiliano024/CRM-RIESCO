@@ -2855,53 +2855,58 @@ async function init() {
       if (cat) showView('pipeline', 'Pipeline', cat);
     });
   });
+
   // Clientes
-  $('#btn-add-client').addEventListener('click', () => openClientModal());
-  $('#modal-client-close').addEventListener('click', closeClientModal);
-  $('#modal-client-cancel').addEventListener('click', closeClientModal);
-  $('#modal-client-save').addEventListener('click', saveClient);
-  $('#modal-client').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeClientModal(); });
+  $('#btn-add-client')?.addEventListener('click', () => openClientModal());
+  $('#modal-client-close')?.addEventListener('click', closeClientModal);
+  $('#modal-client-cancel')?.addEventListener('click', closeClientModal);
+  $('#modal-client-save')?.addEventListener('click', saveClient);
+  $('#modal-client')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeClientModal(); });
 
   // Lightbox close
-  $('#lightbox-close').addEventListener('click', closeLightbox);
-  $('#lightbox').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeLightbox(); });
+  $('#lightbox-close')?.addEventListener('click', closeLightbox);
+  $('#lightbox')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeLightbox(); });
 
-  // Bulk upload modal (botón en gastos-global)
-  $('#btn-gg-bulk-upload').addEventListener('click', openBulkUploadModal);
-  $('#modal-bulk-close').addEventListener('click', closeBulkUploadModal);
-  $('#modal-bulk-cancel').addEventListener('click', closeBulkUploadModal);
-  $('#modal-bulk-upload').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeBulkUploadModal(); });
-  $('#btn-select-bulk').addEventListener('click', () => $('#bulk-file-input').click());
-  $('#bulk-file-input').addEventListener('change', (e) => { if (e.target.files.length) processBulkFiles(e.target.files); e.target.value = ''; });
+  // Bulk upload modal
+  $('#btn-gg-bulk-upload')?.addEventListener('click', openBulkUploadModal);
+  $('#modal-bulk-close')?.addEventListener('click', closeBulkUploadModal);
+  $('#modal-bulk-cancel')?.addEventListener('click', closeBulkUploadModal);
+  $('#modal-bulk-upload')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeBulkUploadModal(); });
+  $('#btn-select-bulk')?.addEventListener('click', () => $('#bulk-file-input').click());
+  $('#bulk-file-input')?.addEventListener('change', (e) => { if (e.target.files.length) processBulkFiles(e.target.files); e.target.value = ''; });
+
   // Bulk drag & drop
-  const dropZone = $('#bulk-drop-zone');
-  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
-  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-  dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); if (e.dataTransfer.files.length) processBulkFiles(e.dataTransfer.files); });
+  const bulkDropZone = $('#bulk-drop-zone');
+  if (bulkDropZone) {
+    bulkDropZone.addEventListener('dragover', (e) => { e.preventDefault(); bulkDropZone.classList.add('dragover'); });
+    bulkDropZone.addEventListener('dragleave', () => bulkDropZone.classList.remove('dragover'));
+    bulkDropZone.addEventListener('drop', (e) => { e.preventDefault(); bulkDropZone.classList.remove('dragover'); if (e.dataTransfer.files.length) processBulkFiles(e.dataTransfer.files); });
+  }
 
   // Cobro modal
-  $('#btn-add-cobro').addEventListener('click', () => openCobroModal());
-  $('#modal-cobro-close').addEventListener('click', closeCobroModal);
-  $('#modal-cobro-cancel').addEventListener('click', closeCobroModal);
-  $('#modal-cobro-save').addEventListener('click', saveCobro);
-  $('#modal-cobro').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeCobroModal(); });
+  $('#btn-add-cobro')?.addEventListener('click', () => openCobroModal());
+  $('#modal-cobro-close')?.addEventListener('click', closeCobroModal);
+  $('#modal-cobro-cancel')?.addEventListener('click', closeCobroModal);
+  $('#modal-cobro-save')?.addEventListener('click', saveCobro);
+  $('#modal-cobro')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeCobroModal(); });
+
   // Cobranza filters
-  $('#cob-filter-cobrado').addEventListener('change', async () => {
+  $('#cob-filter-cobrado')?.addEventListener('change', async () => {
     const [gastos, , projects] = await Promise.all([getGastos(), getCobros(), getProjects()]);
     renderCobranzaGastos(gastos, projects);
   });
-  $('#cob-filter-project').addEventListener('change', async () => {
+  $('#cob-filter-project')?.addEventListener('change', async () => {
     const [gastos, , projects] = await Promise.all([getGastos(), getCobros(), getProjects()]);
     renderCobranzaGastos(gastos, projects);
   });
-  $('#cob-filter-status').addEventListener('change', async () => {
+  $('#cob-filter-status')?.addEventListener('change', async () => {
     const [, cobros, projects] = await Promise.all([getGastos(), getCobros(), getProjects()]);
     renderCobranzaCobros(cobros, projects);
   });
 
   // Tareas
-  $('#btn-add-tarea').addEventListener('click', () => openTareaModal());
-  $('#btn-project-add-tarea').addEventListener('click', () => {
+  $('#btn-add-tarea')?.addEventListener('click', () => openTareaModal());
+  $('#btn-project-add-tarea')?.addEventListener('click', () => {
     openTareaModal();
     setTimeout(() => {
       const projSelect = $('#tarea-proyecto');
@@ -2913,11 +2918,11 @@ async function init() {
       }
     }, 100);
   });
-  $('#modal-tarea-close').addEventListener('click', closeTareaModal);
-  $('#modal-tarea-cancel').addEventListener('click', closeTareaModal);
-  $('#modal-tarea-save').addEventListener('click', saveTarea);
-  $('#modal-tarea').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeTareaModal(); });
-  $('#tareas-filter-status').addEventListener('change', () => renderTareas(APP.currentCategory));
+  $('#modal-tarea-close')?.addEventListener('click', closeTareaModal);
+  $('#modal-tarea-cancel')?.addEventListener('click', closeTareaModal);
+  $('#modal-tarea-save')?.addEventListener('click', saveTarea);
+  $('#modal-tarea')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeTareaModal(); });
+  $('#tareas-filter-status')?.addEventListener('change', () => renderTareas(APP.currentCategory));
 
   // Calendar
   $('#nav-calendar')?.addEventListener('click', (e) => {
