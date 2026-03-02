@@ -157,7 +157,7 @@ function bootApp(user) {
   $('#app-shell').classList.remove('hidden');
 
   // Apply read-only class if visualizador
-  if (user.role !== 'admin') {
+  if (user.role === 'visualizador') {
     document.body.classList.add('read-only');
   }
 
@@ -2546,6 +2546,8 @@ async function saveTarea() {
     status,
     createdAt: APP.editingTareaId ? undefined : new Date().toISOString(),
   };
+
+  await upsertTarea(t);
 
   showToast(APP.editingTareaId ? 'Tarea actualizada' : 'Tarea creada', 'success');
   closeTareaModal();
