@@ -4,7 +4,7 @@
    ============================================================ */
 'use strict';
 
-console.log('CRM Riesco y Asociados - app.js v1.4.3 loaded (Clean State)');
+console.log('CRM Riesco y Asociados - app.js v1.4.4 loaded (Clean State)');
 
 // ── STATE ────────────────────────────────────────────────────
 const APP = {
@@ -2301,10 +2301,9 @@ async function renderAdminPanel() {
   const projects = await getProjects();
   const tbody = $('#users-table-body');
 
-  const adminUsersBody = $('#admin-users-body');
-  if (!adminUsersBody) return;
+  if (!tbody) return;
 
-  adminUsersBody.innerHTML = users.map(u => {
+  tbody.innerHTML = users.map(u => {
     let roleLabel = 'Visualizador';
     if (u.role === 'admin') roleLabel = 'Administrador';
     else if (u.role === 'normal') roleLabel = 'Normal';
