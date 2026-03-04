@@ -95,6 +95,13 @@
               </svg>
               <span>Proyectos</span>
             </a>
+            <a href="#" class="nav-item nav-sub" data-view="tareas" data-category="legal" id="nav-legal-tareas">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 11 12 14 22 4"></polyline>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+              </svg>
+              <span>Tareas</span>
+            </a>
           </div>
         </div>
 
@@ -556,31 +563,58 @@
               </div>
             </div>
           </div>
-          <!-- Tab Tareas -->
           <div class="tab-content hidden" id="tab-tareas">
             <div class="gastos-summary-bar">
               <div class="gasto-summary-item"><span class="gasto-summary-label">Tareas Pendientes</span><span
                   class="gasto-summary-value" id="project-tareas-count">0</span></div>
+              <div class="view-toggle" id="project-tasks-view-toggle" style="margin-left:auto;">
+                <button class="btn btn-sm btn-ghost active" data-mode="table">Lista</button>
+                <button class="btn btn-sm btn-ghost" data-mode="calendar">Calendario</button>
+              </div>
               <button class="btn btn-primary btn-sm can-edit" id="btn-project-add-tarea">+ Nueva Tarea</button>
             </div>
             <div class="card">
               <div class="card-header">
-                <h3 class="card-title">Listado de Tareas</h3>
+                <h3 class="card-title" id="project-tasks-title">Listado de Tareas</h3>
               </div>
               <div class="card-body">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>Estado</th>
-                      <th>Descripción</th>
-                      <th>Asignado A</th>
-                      <th>Fecha Límite</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody id="project-tareas-table-body"></tbody>
-                </table>
+                <!-- Project Table View -->
+                <div id="project-tareas-table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Estado</th>
+                        <th>Descripción</th>
+                        <th>Asignado A</th>
+                        <th>Fecha Límite</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody id="project-tareas-table-body"></tbody>
+                  </table>
+                </div>
+
+                <!-- Project Calendar View -->
+                <div id="project-tareas-calendar-container" class="hidden">
+                  <div class="calendar-nav">
+                    <button class="btn btn-ghost btn-sm" id="btn-project-task-cal-prev">&lt;</button>
+                    <h3 id="project-task-cal-title">Mes Año</h3>
+                    <button class="btn btn-ghost btn-sm" id="btn-project-task-cal-next">&gt;</button>
+                  </div>
+                  <div class="calendar-grid-header">
+                    <div>Lun</div>
+                    <div>Mar</div>
+                    <div>Mié</div>
+                    <div>Jue</div>
+                    <div>Vie</div>
+                    <div>Sáb</div>
+                    <div>Dom</div>
+                  </div>
+                  <div class="calendar-grid" id="project-task-calendar-grid"></div>
+                </div>
+
                 <div class="empty-state hidden" id="project-tareas-empty">
+
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                     <path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
                   </svg>
@@ -1002,7 +1036,7 @@
         <div class="form-grid">
           <div class="form-group"><label class="form-label" for="input-name">Nombre *</label><input type="text"
               class="form-input" id="input-name" placeholder="Ej: Torre Costanera" /></div>
-          <div class="form-group"><label class="form-label" for="input-client">Empresa / Cliente *</label>
+          <div class="form-group"><label class="form-label" for="input-client">Empresa / Cliente</label>
             <select class="form-input" id="input-client">
               <option value="">— Seleccionar empresa —</option>
             </select>
