@@ -845,7 +845,7 @@
                 <option value="pendiente" selected>Pendientes</option>
                 <option value="completada">Completadas</option>
               </select>
-              <button class="btn btn-primary btn-sm can-edit" id="btn-add-tarea" onclick="openTareaModal()">
+              <button class="btn btn-primary btn-sm can-edit" id="btn-add-tarea">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   style="width:14px;height:14px">
                   <line x1="12" y1="5" x2="12" y2="19" />
@@ -1316,11 +1316,11 @@
   </div>
 
   <!-- MODAL: TAREA -->
-  <div class="modal-overlay hidden" id="modal-tarea" onclick="if(event.target===this)closeTareaModal()">
+  <div class="modal-overlay hidden" id="modal-tarea">
     <div class="modal w-sm">
       <div class="modal-header">
         <h2 class="modal-title" id="modal-tarea-title">Nueva Tarea</h2>
-        <button class="modal-close" id="modal-tarea-close" onclick="closeTareaModal()">&times;</button>
+        <button class="modal-close" id="modal-tarea-close">&times;</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
@@ -1342,8 +1342,8 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-ghost" id="modal-tarea-cancel" onclick="closeTareaModal()">Cancelar</button>
-        <button class="btn btn-primary" id="modal-tarea-save" onclick="saveTarea()">Guardar Tarea</button>
+        <button class="btn btn-ghost" id="modal-tarea-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="modal-tarea-save">Guardar Tarea</button>
       </div>
     </div>
   </div>
