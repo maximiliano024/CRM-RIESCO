@@ -136,6 +136,12 @@ async function upsertProject(p) {
     if (error) console.error('upsertProject:', error);
 }
 
+async function updateProjectStage(id, stage) {
+    const { error } = await _supabase.from('projects').update({ stage }).eq('id', id);
+    if (error) { console.error('updateProjectStage:', error); return false; }
+    return true;
+}
+
 async function deleteProjectById(id) {
     // Cascade deletes gastos, comments, files via FK
     const { error } = await _supabase.from('projects').delete().eq('id', id);
