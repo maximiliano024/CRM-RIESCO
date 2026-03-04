@@ -2838,48 +2838,51 @@ async function renderTareas(category) {
 }
 
 async function openTareaModal(id = null) {
-  APP.editingTareaId = id;
-  const modal = $('#modal-tarea');
-  const title = $('#modal-tarea-title');
-  const btn = $('#modal-tarea-save');
+  try {
+    APP.editingTareaId = id;
+    const modal = $('#modal-tarea');
+    const title = $('#modal-tarea-title');
+    const btn = $('#modal-tarea-save');
 
-  const descField = $('#tarea-description');
-  const dueField = $('#tarea-due-date');
+    const descField = $('#tarea-description');
+    const dueField = $('#tarea-due-date');
 
-  const [projects, users, tareas] = await Promise.all([getProjects(), getUsers(), getTareas()]);
+    const [projects, users, tareas] = await Promise.all([getProjects(), getUsers(), getTareas()]);
 
-  // Load project dropdown (only inmo projects if filtered, otherwise all)
-  const projSelect = $('#tarea-proyecto');
-  const filteredProjects = APP.currentCategory ? projects.filter(p => p.category === APP.currentCategory) : projects;
-  projSelect.innerHTML = filteredProjects.map(p => `<option value="${p.id}">${escHtml(p.name)}</option>`).join('');
+    const projSelect = $('#tarea-proyecto');
+    const filteredProjects = APP.currentCategory ? projects.filter(p => p.category === APP.currentCategory) : projects;
+    projSelect.innerHTML = filteredProjects.map(p => `<option value="${p.id}">${escHtml(p.name)}</option>`).join('');
 
-  // Load users dropdown
-  const userSelect = $('#tarea-asignado');
-  userSelect.innerHTML = users.map(u => `<option value="${u.id}">${escHtml(u.name)}</option>`).join('');
+    const userSelect = $('#tarea-asignado');
+    userSelect.innerHTML = users.map(u => `<option value="${u.id}">${escHtml(u.name)}</option>`).join('');
 
-  if (id) {
-    const t = tareas.find(ta => ta.id === id);
-    if (!t) return;
-    title.textContent = 'Editar Tarea';
-    btn.textContent = 'Guardar Cambios';
-    if (!filteredProjects.find(p => p.id === t.projectId)) {
-      projSelect.innerHTML += `<option value="${t.projectId}" selected>${escHtml(projects.find(p => p.id === t.projectId)?.name || 'Desconocido')}</option>`;
+    if (id) {
+      const t = tareas.find(ta => ta.id === id);
+      if (!t) return;
+      title.textContent = 'Editar Tarea';
+      btn.textContent = 'Guardar Cambios';
+      if (!filteredProjects.find(p => p.id === t.projectId)) {
+        projSelect.innerHTML += `<option value="${t.projectId}" selected>${escHtml(projects.find(p => p.id === t.projectId)?.name || 'Desconocido')}</option>`;
+      } else {
+        projSelect.value = t.projectId;
+      }
+      descField.value = t.description;
+      dueField.value = t.dueDate || today();
+      userSelect.value = t.userId || '';
     } else {
-      projSelect.value = t.projectId;
+      title.textContent = 'Nueva Tarea';
+      btn.textContent = 'Crear Tarea';
+      descField.value = '';
+      dueField.value = today();
+      userSelect.value = getCurrentUser()?.id || '';
     }
-    descField.value = t.description;
-    dueField.value = t.dueDate || today();
-    userSelect.value = t.userId || '';
-  } else {
-    title.textContent = 'Nueva Tarea';
-    btn.textContent = 'Crear Tarea';
-    descField.value = '';
-    dueField.value = today();
-    userSelect.value = getCurrentUser()?.id || '';
-  }
 
-  modal.classList.remove('hidden');
-  descField.focus();
+    modal.classList.remove('hidden');
+    descField.focus();
+  } catch (err) {
+    console.error(err);
+    showToast('Error al abrir: ' + err.message, 'error');
+  }
 }
 
 function closeTareaModal() {
@@ -3187,7 +3190,15 @@ async function init() {
     renderTaskCalendar(APP.currentCategory);
   });
 
-  $('#btn-add-tarea')?.addEventListener('click', () => openTareaModal());
+  $('#btn-add-tarea')?.addEventListener('click', async () => {
+    const btn = $('#btn-add-tarea');
+    const originalText = btn.innerHTML;
+    btn.textContent = 'Abriendo...';
+    btn.style.opacity = '0.7';
+    await openTareaModal();
+    btn.innerHTML = originalText;
+    btn.style.opacity = '1';
+  });
   $('#btn-project-add-tarea')?.addEventListener('click', () => {
     openTareaModal();
     setTimeout(() => {
