@@ -1316,11 +1316,11 @@
   </div>
 
   <!-- MODAL: TAREA -->
-  <div class="modal-overlay hidden" id="modal-tarea">
+  <div class="modal-overlay hidden" id="modal-tarea" onclick="if(event.target===this)closeTareaModal()">
     <div class="modal w-sm">
       <div class="modal-header">
         <h2 class="modal-title" id="modal-tarea-title">Nueva Tarea</h2>
-        <button class="modal-close" id="modal-tarea-close">&times;</button>
+        <button class="modal-close" id="modal-tarea-close" onclick="closeTareaModal()">&times;</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
@@ -1342,8 +1342,8 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-ghost" id="modal-tarea-cancel">Cancelar</button>
-        <button class="btn btn-primary" id="modal-tarea-save">Guardar Tarea</button>
+        <button class="btn btn-ghost" id="modal-tarea-cancel" onclick="closeTareaModal()">Cancelar</button>
+        <button class="btn btn-primary" id="modal-tarea-save" onclick="saveTarea()">Guardar Tarea</button>
       </div>
     </div>
   </div>
