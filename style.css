@@ -2824,13 +2824,15 @@ body.read-only .add-card-btn {
   margin-bottom: 20px;
 }
 
-#task-cal-title {
+#task-cal-title,
+#project-task-cal-title {
   margin: 0;
   min-width: 180px;
   text-align: center;
   font-size: 1.25rem;
   color: var(--brand-primary);
 }
+
 
 .calendar-grid-header {
   display: grid;
