@@ -160,7 +160,7 @@ async function saveProjects(projects) {
 
 async function upsertProject(p) {
     const { error } = await _supabase.from('projects').upsert(projectToRow(p), { onConflict: 'id' });
-    if (error) { console.error('upsertProject:', error); return false; }
+    if (error) { console.error('upsertProject:', error); return error; }
     return true;
 }
 

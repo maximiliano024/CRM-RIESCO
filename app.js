@@ -444,14 +444,14 @@ async function saveProject() {
       data.lat = (data.address !== old.address) ? null : old.lat;
       data.lng = (data.address !== old.address) ? null : old.lng;
       ok = await upsertProject(data);
-      if (ok === false) { showToast('Error al guardar el proyecto. Revisa la consola.', 'error'); return; }
+      if (ok !== true) { showToast('Error Editando: ' + (ok?.message || 'Revisa consola'), 'error'); return; }
       showToast('Proyecto actualizado', 'success');
     } else {
       data.id = uid();
       data.createdAt = new Date().toISOString();
       data.lat = null; data.lng = null;
       ok = await upsertProject(data);
-      if (ok === false) { showToast('Error al crear el proyecto. Revisa la consola.', 'error'); return; }
+      if (ok !== true) { showToast('Error Creando: ' + (ok?.message || 'Revisa consola'), 'error'); return; }
       showToast('Proyecto creado', 'success');
     }
     closeProjectModal();
