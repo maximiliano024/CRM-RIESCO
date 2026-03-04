@@ -4,7 +4,7 @@
    ============================================================ */
 'use strict';
 
-console.log('CRM Riesco y Asociados - app.js v1.4.2 loaded (Clean State)');
+console.log('CRM Riesco y Asociados - app.js v1.4.3 loaded (Clean State)');
 
 // ── STATE ────────────────────────────────────────────────────
 const APP = {
@@ -1282,130 +1282,363 @@ async function deleteClient(id) {
   showView('clientes', 'Clientes', null);
 }
 
-// ── GLOBAL GASTOS VIEW ───────────────────────────────────────
-async function renderGastosGlobal(category, filterProjectId = '', filterCat = '') {
+// ── GLOBAL GASTOS VIEW (Excel Style) ─────────────────────────
+// State for the Excel table
+APP.xlsState = {
+  allGastos: [],      // full unfiltered dataset
+  projectMap: {},     // id → name
+  isAdmin: false,
+  sortCol: 'date',
+  sortAsc: false,
+  filters: {},        // colKey → string value
+  selectedId: null,
+};
+
+// Column definitions
+function _getXlsCols(isAdmin) {
+  const cols = [
+    { key: 'project', label: 'Proyecto', editable: false, type: 'text' },
+    ...(isAdmin ? [{ key: 'userName', label: 'Colaborador', editable: false, type: 'text' }] : []),
+    { key: 'date', label: 'Fecha', editable: true, type: 'date' },
+    { key: 'description', label: 'Descripción', editable: true, type: 'text' },
+    {
+      key: 'category', label: 'Categoría', editable: true, type: 'select',
+      options: ['Transporte', 'Alimentación', 'Alojamiento', 'Materiales', 'Servicios', 'Otro']
+    },
+    { key: 'amount', label: 'Monto', editable: true, type: 'number' },
+    { key: 'voucher', label: 'Comprobante', editable: true, type: 'text' },
+    { key: 'receipt', label: 'Boleta', editable: false, type: 'receipt' },
+    { key: 'actions', label: '', editable: false, type: 'actions' },
+  ];
+  return cols;
+}
+
+async function renderGastosGlobal(category) {
+  const user = getCurrentUser();
+  const isAdmin = user?.role === 'admin';
+  const canEdit = isAdmin || user?.role === 'normal';
+
+  // Load data
   const allProjects = await getProjects();
   const projects = category ? allProjects.filter(p => p.category === category) : allProjects;
   const projectMap = {};
   projects.forEach(p => { projectMap[p.id] = p.name; });
 
-  const currentUser = getCurrentUser();
   let gastos = (await getGastos()).filter(g => projects.some(p => p.id === g.projectId));
-  if (currentUser?.role !== 'admin') {
-    gastos = gastos.filter(g => g.userId === currentUser.id);
+  if (!isAdmin) {
+    gastos = gastos.filter(g => g.userId === user?.id);
   }
 
-  const total = gastos.reduce((s, g) => s + (g.amount || 0), 0);
-  const projsWithGastos = new Set(gastos.map(g => g.projectId)).size;
+  // Save state
+  APP.xlsState.allGastos = gastos;
+  APP.xlsState.projectMap = projectMap;
+  APP.xlsState.isAdmin = isAdmin;
+  APP.xlsState.canEdit = canEdit;
 
+  // KPI cards
+  const total = gastos.reduce((s, g) => s + (g.amount || 0), 0);
   $('#gg-total').textContent = formatCLP(total);
   $('#gg-count').textContent = gastos.length;
-  $('#gg-proj-count').textContent = projsWithGastos;
+  $('#gg-proj-count').textContent = new Set(gastos.map(g => g.projectId)).size;
 
-  // Populate project filter
-  const projFilter = $('#gg-filter-project');
-  const currentProj = filterProjectId || projFilter.value || '';
-  projFilter.innerHTML = `<option value="">Todos los proyectos</option>` +
-    projects.map(p => `<option value="${p.id}" ${currentProj === p.id ? 'selected' : ''}>${escHtml(p.name)}</option>`).join('');
+  // Build column headers and filter row
+  const cols = _getXlsCols(isAdmin);
+  const headerRow = $('#xls-header-row');
+  const filterRow = $('#xls-filter-row');
 
-  // Apply filters
-  if (currentProj) gastos = gastos.filter(g => g.projectId === currentProj);
-  const currentCat = filterCat || $('#gg-filter-cat').value || '';
-  if (currentCat) gastos = gastos.filter(g => g.category === currentCat);
+  headerRow.innerHTML = cols.map(c => {
+    if (!c.label) return `<th style="width:80px"></th>`;
+    const isSorted = APP.xlsState.sortCol === c.key;
+    const arrow = isSorted ? (APP.xlsState.sortAsc ? ' ▲' : ' ▼') : ' ⬍';
+    const sortable = ['project', 'userName', 'date', 'description', 'category', 'amount', 'voucher'].includes(c.key);
+    return `<th class="${sortable ? 'sortable' : ''}"
+      ${sortable ? `onclick="_xlsSortBy('${c.key}')"` : ''}
+      title="${sortable ? 'Clic para ordenar' : ''}"
+    >${c.label}${sortable ? `<span class="xls-sort-icon">${arrow}</span>` : ''}</th>`;
+  }).join('');
 
-  const user = getCurrentUser();
-  const canEdit = user?.role === 'admin' || user?.role === 'normal';
+  filterRow.innerHTML = cols.map(c => {
+    if (c.type === 'actions' || c.type === 'receipt') return '<th></th>';
+    const val = APP.xlsState.filters[c.key] || '';
+    if (c.type === 'select') {
+      return `<th><select class="xls-col-filter" data-col="${c.key}" onchange="_xlsApplyFilters()">
+        <option value="">Todas</option>
+        ${c.options.map(o => `<option value="${o}" ${val === o ? 'selected' : ''}>${o}</option>`).join('')}
+      </select></th>`;
+    }
+    return `<th><input type="${c.type === 'number' ? 'number' : 'text'}" class="xls-col-filter" data-col="${c.key}" value="${escHtml(val)}" placeholder="🔍" oninput="_xlsFilterDebounce(this)"/></th>`;
+  }).join('');
+
+  // Render rows
+  _xlsRenderRows();
+
+  // Receipt panel close button
+  $('#xls-receipt-close').onclick = () => {
+    $('#xls-receipt-panel').classList.add('hidden');
+    APP.xlsState.selectedId = null;
+    $$('.xls-row-selected').forEach(r => r.classList.remove('xls-row-selected'));
+  };
+}
+
+// Apply column filters and re-render rows
+function _xlsApplyFilters() {
+  // Collect current filter values
+  $$('.xls-col-filter').forEach(input => {
+    APP.xlsState.filters[input.dataset.col] = input.value.trim().toLowerCase();
+  });
+  _xlsRenderRows();
+}
+
+// Debounce wrapper for text inputs
+let _xlsDebounceTimer = null;
+function _xlsFilterDebounce(el) {
+  clearTimeout(_xlsDebounceTimer);
+  _xlsDebounceTimer = setTimeout(() => {
+    APP.xlsState.filters[el.dataset.col] = el.value.trim().toLowerCase();
+    _xlsRenderRows();
+  }, 280);
+}
+
+// Sort
+function _xlsSortBy(col) {
+  if (APP.xlsState.sortCol === col) {
+    APP.xlsState.sortAsc = !APP.xlsState.sortAsc;
+  } else {
+    APP.xlsState.sortCol = col;
+    APP.xlsState.sortAsc = true;
+  }
+  renderGastosGlobal(APP.currentCategory);
+}
+
+// Render filtered + sorted rows
+function _xlsRenderRows() {
+  const { allGastos, projectMap, isAdmin, canEdit, filters, sortCol, sortAsc } = APP.xlsState;
+
+  // Filter
+  let rows = allGastos.filter(g => {
+    const proj = (projectMap[g.projectId] || '').toLowerCase();
+    const checks = {
+      project: val => proj.includes(val),
+      userName: val => (g.userName || '').toLowerCase().includes(val),
+      date: val => (g.date || '').includes(val),
+      description: val => (g.description || '').toLowerCase().includes(val),
+      category: val => (g.category || '').toLowerCase() === val || val === '',
+      amount: val => !val || String(g.amount).includes(val),
+      voucher: val => (g.voucher || '').toLowerCase().includes(val),
+    };
+    for (const [col, val] of Object.entries(filters)) {
+      if (!val) continue;
+      if (checks[col] && !checks[col](val)) return false;
+    }
+    return true;
+  });
+
+  // Sort
+  rows.sort((a, b) => {
+    let vA, vB;
+    if (sortCol === 'project') { vA = projectMap[a.projectId] || ''; vB = projectMap[b.projectId] || ''; }
+    else if (sortCol === 'amount') { vA = a.amount || 0; vB = b.amount || 0; return sortAsc ? vA - vB : vB - vA; }
+    else { vA = (a[sortCol] || '').toString(); vB = (b[sortCol] || '').toString(); }
+    return sortAsc ? vA.localeCompare(vB) : vB.localeCompare(vA);
+  });
 
   const tbody = $('#gg-table-body');
   const empty = $('#gg-empty');
+  const cols = _getXlsCols(isAdmin);
 
-  if (gastos.length === 0) {
+  if (rows.length === 0) {
     tbody.innerHTML = '';
     empty.classList.remove('hidden');
     return;
   }
   empty.classList.add('hidden');
 
-  // Sort by Project Name, then by Date (Desc)
-  gastos.sort((a, b) => {
-    const pA = projectMap[a.projectId] || '';
-    const pB = projectMap[b.projectId] || '';
-    if (pA.localeCompare(pB) !== 0) return pA.localeCompare(pB);
-    return (b.date || '').localeCompare(a.date || '');
-  });
+  const CATS = ['Transporte', 'Alimentación', 'Alojamiento', 'Materiales', 'Servicios', 'Otro'];
 
-  const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-  let html = '';
-  let currentGroup = '';
-
-  gastos.forEach(g => {
+  tbody.innerHTML = rows.map(g => {
     const projName = projectMap[g.projectId] || '—';
-    let monthStr = '—';
-    if (g.date) {
-      const d = new Date(g.date);
-      monthStr = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+    const isSelected = APP.xlsState.selectedId === g.id;
+
+    const cells = cols.map(c => {
+      switch (c.key) {
+        case 'project':
+          return `<td title="${escHtml(projName)}" style="font-weight:600;color:var(--text-primary);cursor:pointer" onclick="event.stopPropagation();openProjectDetail('${g.projectId}')">${escHtml(projName)}</td>`;
+        case 'userName':
+          return `<td style="color:var(--text-muted);font-size:12px">${escHtml(g.userName || '—')}</td>`;
+        case 'date':
+          return `<td class="xls-cell-editable" ondblclick="_xlsStartEdit(this,'${g.id}','date','date','${escHtml(g.date || '')}')" title="Doble clic para editar">${formatDate(g.date)}</td>`;
+        case 'description':
+          return `<td class="xls-cell-editable" style="max-width:200px" ondblclick="_xlsStartEdit(this,'${g.id}','description','text','${escHtml(g.description || '')}')" title="Doble clic para editar">${escHtml(g.description)}</td>`;
+        case 'category':
+          return `<td class="xls-cell-editable" ondblclick="_xlsStartEdit(this,'${g.id}','category','select','${escHtml(g.category || '')}','${CATS.join('|')}')" title="Doble clic para editar"><span class="xls-has-receipt" style="background:rgba(79,126,255,0.10);color:var(--brand-primary)">${escHtml(g.category || '—')}</span></td>`;
+        case 'amount':
+          return `<td class="xls-cell-editable" style="font-weight:700;color:var(--success)" ondblclick="_xlsStartEdit(this,'${g.id}','amount','number','${g.amount || 0}')" title="Doble clic para editar">${formatCLP(g.amount)}</td>`;
+        case 'voucher':
+          return `<td class="xls-cell-editable" style="color:var(--text-muted)" ondblclick="_xlsStartEdit(this,'${g.id}','voucher','text','${escHtml(g.voucher || '')}')" title="Doble clic para editar">${escHtml(g.voucher || '—')}</td>`;
+        case 'receipt':
+          if (g.receiptDataUrl) {
+            const isImg = !g.receiptDataUrl.startsWith('data:application/pdf');
+            return `<td onclick="event.stopPropagation();_xlsShowReceipt('${g.id}')" title="Ver boleta">
+              ${isImg ? `<img class="xls-thumb" src="${g.receiptDataUrl}" alt="boleta"/>` : `<span class="xls-has-receipt">📄 PDF</span>`}
+            </td>`;
+          }
+          return `<td style="color:var(--text-muted);font-size:12px">—</td>`;
+        case 'actions':
+          return canEdit ? `<td onclick="event.stopPropagation()"><div class="xls-row-actions">
+            <button class="btn btn-sm btn-ghost" style="padding:3px 8px;font-size:11px" onclick="openGastoModal('${g.id}')">✏</button>
+            <button class="btn btn-sm btn-danger" style="padding:3px 8px;font-size:11px" onclick="deleteGastoGlobal('${g.id}')">✕</button>
+          </div></td>` : '<td></td>';
+        default: return '<td>—</td>';
+      }
+    }).join('');
+
+    return `<tr data-gasto-id="${g.id}" class="${isSelected ? 'xls-row-selected' : ''}" onclick="_xlsSelectRow('${g.id}')">${cells}</tr>`;
+  }).join('');
+}
+
+// Select a row and show receipt in panel
+function _xlsSelectRow(id) {
+  APP.xlsState.selectedId = id;
+  $$('#gg-table-body tr').forEach(r => r.classList.toggle('xls-row-selected', r.dataset.gastoId === id));
+  const g = APP.xlsState.allGastos.find(x => x.id === id);
+  if (g?.receiptDataUrl) _xlsShowReceipt(id);
+}
+
+function _xlsShowReceipt(id) {
+  const g = APP.xlsState.allGastos.find(x => x.id === id);
+  if (!g) return;
+
+  const panel = $('#xls-receipt-panel');
+  const body = $('#xls-receipt-body');
+  const titleEl = $('#xls-receipt-title');
+
+  panel.classList.remove('hidden');
+  titleEl.textContent = g.description || 'Boleta';
+
+  if (!g.receiptDataUrl) {
+    body.innerHTML = `<div class="xls-receipt-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:40px;height:40px;opacity:0.25"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg><p>Sin boleta adjunta</p></div>`;
+    return;
+  }
+
+  const isPdf = g.receiptDataUrl.startsWith('data:application/pdf') || g.receiptDataUrl.includes('.pdf');
+  const metaHtml = `<div class="xls-receipt-meta">
+    <strong>Proyecto:</strong> ${escHtml(APP.xlsState.projectMap[g.projectId] || '—')}<br>
+    <strong>Fecha:</strong> ${formatDate(g.date)}<br>
+    <strong>Descripción:</strong> ${escHtml(g.description || '—')}<br>
+    <strong>Monto:</strong> ${formatCLP(g.amount)}<br>
+    ${g.userName ? `<strong>Colaborador:</strong> ${escHtml(g.userName)}<br>` : ''}
+  </div>`;
+
+  if (isPdf) {
+    body.innerHTML = metaHtml + `<iframe class="xls-receipt-iframe" src="${g.receiptDataUrl}" title="PDF Boleta"></iframe>`;
+  } else {
+    body.innerHTML = metaHtml + `<img class="xls-receipt-img" src="${g.receiptDataUrl}" alt="Boleta" onclick="openLightboxDirect('${g.id}')" title="Clic para ampliar"/>`;
+  }
+}
+
+// Inline cell editing
+function _xlsStartEdit(td, gastoId, field, type, currentVal, optionsStr) {
+  if (td.classList.contains('editing')) return;
+  td.classList.add('editing');
+  const prev = td.innerHTML;
+
+  let input;
+  if (type === 'select') {
+    const opts = (optionsStr || '').split('|');
+    input = document.createElement('select');
+    input.className = 'xls-cell-input';
+    opts.forEach(o => {
+      const opt = document.createElement('option');
+      opt.value = o; opt.textContent = o;
+      if (o === currentVal) opt.selected = true;
+      input.appendChild(opt);
+    });
+  } else {
+    input = document.createElement('input');
+    input.type = type;
+    input.className = 'xls-cell-input';
+    input.value = currentVal;
+  }
+
+  td.innerHTML = '';
+  td.appendChild(input);
+  input.focus();
+  if (input.select) input.select();
+
+  const save = async () => {
+    const newVal = type === 'number' ? Number(input.value) : input.value;
+    td.classList.remove('editing');
+
+    // Update in local state immediately for responsiveness
+    const g = APP.xlsState.allGastos.find(x => x.id === gastoId);
+    if (g) g[field] = newVal;
+
+    // Update display
+    if (field === 'amount') td.innerHTML = `<span style="font-weight:700;color:var(--success)">${formatCLP(newVal)}</span>`;
+    else if (field === 'date') td.innerHTML = formatDate(newVal);
+    else if (field === 'category') td.innerHTML = `<span class="xls-has-receipt" style="background:rgba(79,126,255,0.10);color:var(--brand-primary)">${escHtml(newVal)}</span>`;
+    else td.innerHTML = escHtml(newVal) || '—';
+
+    // Save to Supabase
+    const ok = await updateGastoField(gastoId, field, newVal);
+    if (!ok) {
+      showToast('Error al guardar, intenta de nuevo', 'error');
+      td.innerHTML = prev;
+    } else {
+      // Update KPI totals
+      const total = APP.xlsState.allGastos.reduce((s, g) => s + (g.amount || 0), 0);
+      $('#gg-total').textContent = formatCLP(total);
     }
-    const groupKey = `${projName} - ${monthStr}`;
+  };
 
-    if (groupKey !== currentGroup) {
-      html += `<tr class="group-header">
-        <td colspan="8" style="background:var(--surface-hover); font-weight:700; color:var(--text-primary); padding:12px 16px;">
-          🏢 ${escHtml(groupKey)}
-        </td>
-      </tr>`;
-      currentGroup = groupKey;
-    }
-
-    const thumb = g.receiptDataUrl
-      ? `<img class="receipt-thumb" src="${g.receiptDataUrl}" alt="Boleta" onclick="openLightbox('${g.id}')" />`
-      : `<span style="color:var(--text-muted);font-size:12px">—</span>`;
-
-    const creatorInfo = g.userName ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px">👤 ${escHtml(g.userName)}</div>` : '';
-
-    // We can omit the ProjectName column since it's in the header, but let's keep the row structure 
-    html += `<tr>
-      <td style="font-weight:600;color:var(--text-primary);cursor:pointer" onclick="openProjectDetail('${g.projectId}')">${escHtml(projName)}</td>
-      <td>${formatDate(g.date)}</td>
-      <td>
-        <div style="font-weight:500">${escHtml(g.description)}</div>
-        ${creatorInfo}
-      </td>
-      <td><span class="stage-badge" style="background:rgba(79,126,255,0.12);color:var(--accent)">${escHtml(g.category)}</span></td>
-      <td style="font-weight:700;color:var(--success)">${formatCLP(g.amount)}</td>
-      <td style="color:var(--text-muted)">${escHtml(g.voucher || '—')}</td>
-      <td>${thumb}</td>
-      <td><div class="td-actions">
-        ${canEdit ? `<button class="btn btn-sm btn-ghost" onclick="openGastoModal('${g.id}')">Editar</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteGastoGlobal('${g.id}')">Eliminar</button>` : ''}
-      </div></td>
-    </tr>`;
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+    if (e.key === 'Escape') { td.classList.remove('editing'); td.innerHTML = prev; }
   });
-
-  tbody.innerHTML = html;
 }
 
 async function deleteGastoGlobal(id) {
   if (!confirm('¿Eliminar este gasto?')) return;
   await deleteGastoById(id);
-  renderGastosGlobal(APP.currentCategory);
+  APP.xlsState.allGastos = APP.xlsState.allGastos.filter(g => g.id !== id);
+  _xlsRenderRows();
+  const total = APP.xlsState.allGastos.reduce((s, g) => s + (g.amount || 0), 0);
+  $('#gg-total').textContent = formatCLP(total);
+  $('#gg-count').textContent = APP.xlsState.allGastos.length;
   showToast('Gasto eliminado', 'info');
+  if (APP.xlsState.selectedId === id) {
+    $('#xls-receipt-panel').classList.add('hidden');
+    APP.xlsState.selectedId = null;
+  }
 }
 
 async function exportGastosGlobal() {
-  const projects = (await getProjects()).filter(p => p.category === APP.currentCategory);
-  const projectMap = {};
-  projects.forEach(p => { projectMap[p.id] = p.name; });
-  const gastos = (await getGastos()).filter(g => projects.some(p => p.id === g.projectId));
-  if (!gastos.length) { showToast('No hay gastos para exportar', 'error'); return; }
-  const rows = [['Proyecto', 'Fecha', 'Descripción', 'Categoría', 'Monto', 'Comprobante'],
-  ...gastos.map(g => ["\"" + (projectMap[g.projectId] || '').replace(/"/g, '""') + "\"", g.date || '', `"${(g.description || '').replace(/"/g, '""')}"`, g.category || '', g.amount || 0, g.voucher || ''])
+  const { allGastos, projectMap } = APP.xlsState;
+  if (!allGastos.length) { showToast('No hay gastos para exportar', 'error'); return; }
+  const rows = [
+    ['Proyecto', 'Colaborador', 'Fecha', 'Descripción', 'Categoría', 'Monto', 'Comprobante'],
+    ...allGastos.map(g => [
+      `"${(projectMap[g.projectId] || '').replace(/"/g, '""')}"`,
+      `"${(g.userName || '').replace(/"/g, '""')}"`,
+      g.date || '',
+      `"${(g.description || '').replace(/"/g, '""')}"`,
+      g.category || '',
+      g.amount || 0,
+      `"${(g.voucher || '').replace(/"/g, '""')}"`
+    ])
   ].map(r => r.join(','));
   const blob = new Blob(['\uFEFF' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  const cat = CATEGORIES[APP.currentCategory]?.label || APP.currentCategory;
-  a.download = `gastos-${cat.toLowerCase()}.csv`; a.click();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const cat = CATEGORIES[APP.currentCategory]?.label || APP.currentCategory || 'todos';
+  a.download = `gastos-${cat.toLowerCase()}.csv`;
+  a.click();
   showToast('CSV exportado', 'success');
 }
+
+
+
 
 // ── LIGHTBOX ──────────────────────────────────────────────────
 function openLightboxData(dataUrl, fileType, fileName) {

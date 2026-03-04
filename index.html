@@ -57,7 +57,7 @@
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-logo">
         <span class="sidebar-brand">Riesco &amp; Asociados <small
-            style="font-size: 10px; opacity: 0.6; margin-left: 5px;">v1.4.2</small></span>
+            style="font-size: 10px; opacity: 0.6; margin-left: 5px;">v1.4.3</small></span>
       </div>
 
       <nav class="sidebar-nav" id="sidebar-nav">
@@ -594,32 +594,24 @@
 
       <!-- ── VIEW: GASTOS GLOBAL ── -->
       <section class="view hidden" id="view-gastos-global">
-        <!-- Summary bar -->
-        <div class="gastos-global-summary" id="gg-summary">
-          <div class="gasto-summary-item"><span class="gasto-summary-label">Total Categoría</span><span
-              class="gasto-summary-value" id="gg-total">$0</span></div>
-          <div class="gasto-summary-item"><span class="gasto-summary-label">Gastos Registrados</span><span
-              class="gasto-summary-value" id="gg-count">0</span></div>
-          <div class="gasto-summary-item"><span class="gasto-summary-label">Proyectos con Gastos</span><span
-              class="gasto-summary-value" id="gg-proj-count">0</span></div>
-          <div class="gg-actions">
-            <select class="filter-select" id="gg-filter-project">
-              <option value="">Todos los proyectos</option>
-            </select>
-            <select class="filter-select" id="gg-filter-cat">
-              <option value="">Todas las categorías</option>
-              <option value="Transporte">Transporte</option>
-              <option value="Alimentación">Alimentación</option>
-              <option value="Alojamiento">Alojamiento</option>
-              <option value="Materiales">Materiales</option>
-              <option value="Servicios">Servicios</option>
-              <option value="Otro">Otro</option>
-            </select>
+
+        <!-- Top bar -->
+        <div class="xls-topbar">
+          <div class="xls-kpis">
+            <div class="xls-kpi"><span class="xls-kpi-label">Total</span><span class="xls-kpi-value"
+                id="gg-total">$0</span></div>
+            <div class="xls-kpi"><span class="xls-kpi-label">Gastos</span><span class="xls-kpi-value"
+                id="gg-count">0</span></div>
+            <div class="xls-kpi"><span class="xls-kpi-label">Proyectos</span><span class="xls-kpi-value"
+                id="gg-proj-count">0</span></div>
+          </div>
+          <div class="xls-actions">
             <button class="btn btn-primary btn-sm can-edit" id="btn-gg-add-gasto">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>Agregar Gasto
+              </svg>
+              Nuevo Gasto
             </button>
             <button class="btn btn-sm btn-secondary can-edit" id="btn-gg-bulk-upload">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -630,38 +622,55 @@
               </svg>
               Subir Boletas
             </button>
-            <button class="btn btn-sm btn-ghost" id="btn-gg-export">Exportar CSV</button>
+            <button class="btn btn-sm btn-ghost" id="btn-gg-export">⬇ CSV</button>
           </div>
         </div>
-        <!-- Table -->
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title" id="gg-table-title">Todos los Gastos</h2>
-          </div>
-          <div class="card-body">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Proyecto</th>
-                  <th>Fecha</th>
-                  <th>Descripción</th>
-                  <th>Categoría</th>
-                  <th>Monto</th>
-                  <th>Comprobante</th>
-                  <th>Boleta</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="gg-table-body"></tbody>
-            </table>
-            <div class="empty-state hidden" id="gg-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="1.5">
-                <line x1="12" y1="1" x2="12" y2="23" />
-                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-              </svg>
-              <p>No hay gastos registrados en esta categoría.</p>
+
+        <!-- 2-panel layout -->
+        <div class="xls-workspace" id="xls-workspace">
+
+          <!-- LEFT: Excel table -->
+          <div class="xls-table-panel" id="xls-table-panel">
+            <div class="xls-table-wrap">
+              <table class="xls-table" id="gg-xls-table">
+                <thead>
+                  <tr class="xls-header-row" id="xls-header-row">
+                    <!-- columns injected by JS based on role -->
+                  </tr>
+                  <tr class="xls-filter-row" id="xls-filter-row">
+                    <!-- filter inputs injected by JS -->
+                  </tr>
+                </thead>
+                <tbody id="gg-table-body"></tbody>
+              </table>
+              <div class="empty-state hidden" id="gg-empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <line x1="12" y1="1" x2="12" y2="23" />
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                </svg>
+                <p>No hay gastos registrados.</p>
+              </div>
             </div>
           </div>
+
+          <!-- RIGHT: Receipt preview panel -->
+          <div class="xls-receipt-panel hidden" id="xls-receipt-panel">
+            <div class="xls-receipt-header">
+              <span class="xls-receipt-title" id="xls-receipt-title">Boleta / Comprobante</span>
+              <button class="xls-receipt-close" id="xls-receipt-close" title="Cerrar panel">✕</button>
+            </div>
+            <div class="xls-receipt-body" id="xls-receipt-body">
+              <div class="xls-receipt-placeholder" id="xls-receipt-placeholder">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                  style="width:48px;height:48px;opacity:0.25">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+                <p>Selecciona una fila con boleta</p>
+              </div>
+            </div>
+          </div>
+
         </div>
       </section>
 

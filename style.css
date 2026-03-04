@@ -2964,3 +2964,393 @@ body.read-only .add-card-btn {
   color: var(--brand-primary);
   box-shadow: var(--shadow-sm);
 }
+
+/* ══════════════════════════════════════════════════════════
+   EXCEL-STYLE GASTOS REEMBOLSABLES
+   ══════════════════════════════════════════════════════════ */
+
+/* Top bar */
+.xls-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.xls-kpis {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.xls-kpi {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+
+.xls-kpi-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.xls-kpi-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--brand-primary);
+}
+
+.xls-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Workspace: table + receipt panel side by side */
+.xls-workspace {
+  display: flex;
+  gap: 14px;
+  height: calc(100vh - var(--header-h) - 130px);
+  min-height: 400px;
+}
+
+/* Left table panel */
+.xls-table-panel {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-sm);
+}
+
+.xls-table-wrap {
+  overflow: auto;
+  flex: 1;
+}
+
+/* Excel table */
+.xls-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  table-layout: auto;
+}
+
+.xls-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* Header row */
+.xls-header-row th {
+  background: var(--brand-primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 10px 10px;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  white-space: nowrap;
+  user-select: none;
+  cursor: default;
+}
+
+.xls-header-row th:last-child {
+  border-right: none;
+}
+
+/* Sort indicator */
+.xls-header-row th.sortable {
+  cursor: pointer;
+}
+
+.xls-header-row th.sortable:hover {
+  background: var(--brand-mid);
+}
+
+.xls-sort-icon {
+  font-size: 10px;
+  margin-left: 4px;
+  opacity: 0.6;
+}
+
+/* Filter row */
+.xls-filter-row th {
+  background: #f0f5f8;
+  padding: 4px 4px;
+  border-bottom: 2px solid var(--border-light);
+  border-right: 1px solid var(--border);
+}
+
+.xls-filter-row th:last-child {
+  border-right: none;
+}
+
+.xls-col-filter {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 12px;
+  background: #fff;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.xls-col-filter:focus {
+  border-color: var(--brand-mid);
+  box-shadow: 0 0 0 2px rgba(26, 90, 114, 0.15);
+}
+
+/* Body rows */
+.xls-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+  cursor: pointer;
+}
+
+.xls-table tbody tr:nth-child(even) {
+  background: #f7fafc;
+}
+
+.xls-table tbody tr:hover {
+  background: #e8f3f7 !important;
+}
+
+.xls-table tbody tr.xls-row-selected {
+  background: #d0e9f5 !important;
+  outline: 2px solid var(--brand-mid);
+  outline-offset: -2px;
+}
+
+.xls-table td {
+  padding: 7px 10px;
+  color: var(--text-secondary);
+  vertical-align: middle;
+  border-right: 1px solid var(--border);
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.xls-table td:last-child {
+  border-right: none;
+}
+
+/* Editable cell */
+.xls-cell-editable {
+  cursor: text;
+  position: relative;
+}
+
+.xls-cell-editable:hover::after {
+  content: '✎';
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.xls-cell-editable.editing {
+  padding: 0;
+  overflow: visible;
+}
+
+.xls-cell-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 2px solid var(--brand-mid);
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: #fff;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(26, 90, 114, 0.18);
+}
+
+/* Thumbnail in table */
+.xls-thumb {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  vertical-align: middle;
+}
+
+.xls-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: var(--shadow);
+}
+
+.xls-has-receipt {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--brand-primary);
+  background: rgba(13, 61, 80, 0.08);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+/* Right receipt panel */
+.xls-receipt-panel {
+  width: 320px;
+  flex-shrink: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  animation: slideInRight 0.2s ease;
+}
+
+.xls-receipt-panel.hidden {
+  display: none !important;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.xls-receipt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--brand-primary);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.xls-receipt-title {
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.xls-receipt-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.xls-receipt-close:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.xls-receipt-body {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 12px;
+  gap: 10px;
+}
+
+.xls-receipt-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 100%;
+  color: var(--text-muted);
+  text-align: center;
+  font-size: 13px;
+  padding: 20px;
+}
+
+.xls-receipt-img {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  object-fit: contain;
+  background: #f0f0f0;
+}
+
+.xls-receipt-iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 350px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.xls-receipt-meta {
+  width: 100%;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  line-height: 1.7;
+}
+
+.xls-receipt-meta strong {
+  color: var(--text-primary);
+}
+
+/* Row actions */
+.xls-row-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+/* View paddings override for gastos-global to avoid double scroll */
+#view-gastos-global {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0;
+  height: calc(100vh - var(--header-h));
+  overflow: hidden;
+}

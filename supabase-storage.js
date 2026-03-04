@@ -224,6 +224,17 @@ async function updateGastoCobrado(id, cobrado, fechaCobro = null) {
     if (error) console.error('updateGastoCobrado:', error);
 }
 
+// Actualiza un campo individual de un gasto (para edición inline tipo Excel).
+// field: nombre del campo en camelCase → se convierte a snake_case automáticamente.
+const _camelToSnake = s => s.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`);
+async function updateGastoField(id, field, value) {
+    const col = _camelToSnake(field);
+    const { error } = await _supabase.from('gastos').update({ [col]: value }).eq('id', id);
+    if (error) { console.error('updateGastoField:', error); return false; }
+    return true;
+}
+
+
 // ── COBROS ──────────────────────────────────────────────
 function rowToCobro(r) {
     return {
