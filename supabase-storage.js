@@ -20,7 +20,7 @@ function rowToProject(r) {
     };
 }
 function projectToRow(p) {
-    return {
+    const row = {
         id: p.id, name: p.name, client: p.client,
         category: p.category, stage: p.stage,
         subcategory: p.subcategory || null,
@@ -29,6 +29,9 @@ function projectToRow(p) {
         description: p.description || null, lat: p.lat || null, lng: p.lng || null,
         cover_data_url: p.coverDataUrl || null,
     };
+    // Incluir created_at sólo cuando está disponible (nuevo proyecto)
+    if (p.createdAt) row.created_at = p.createdAt;
+    return row;
 }
 function rowToClient(r) {
     return {
@@ -157,7 +160,8 @@ async function saveProjects(projects) {
 
 async function upsertProject(p) {
     const { error } = await _supabase.from('projects').upsert(projectToRow(p), { onConflict: 'id' });
-    if (error) console.error('upsertProject:', error);
+    if (error) { console.error('upsertProject:', error); return false; }
+    return true;
 }
 
 async function updateProjectStage(id, stage) {

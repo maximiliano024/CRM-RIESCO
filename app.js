@@ -251,6 +251,8 @@ async function showView(viewId, title, category) {
     $('#nav-inmo-gastos')?.classList.add('active');
   } else if (viewId === 'tareas' && category === 'inmobiliario') {
     $('#nav-inmo-tareas')?.classList.add('active');
+  } else if (viewId === 'tareas' && category === 'legal') {
+    $('#nav-legal-tareas')?.classList.add('active');
   } else if (viewId === 'project-detail') {
     // keep whichever was previously active
   }
@@ -433,23 +435,31 @@ async function saveProject() {
     coverDataUrl: APP.coverDataUrl || null,
   };
 
-  if (APP.editingProjectId) {
-    const projects = await getProjects();
-    const old = projects.find(p => p.id === APP.editingProjectId) || {};
-    data.id = APP.editingProjectId;
-    data.lat = (data.address !== old.address) ? null : old.lat;
-    data.lng = (data.address !== old.address) ? null : old.lng;
-    await upsertProject(data);
-    showToast('Proyecto actualizado', 'success');
-  } else {
-    data.id = uid();
-    data.createdAt = new Date().toISOString();
-    data.lat = null; data.lng = null;
-    await upsertProject(data);
-    showToast('Proyecto creado', 'success');
+  try {
+    let ok;
+    if (APP.editingProjectId) {
+      const projects = await getProjects();
+      const old = projects.find(p => p.id === APP.editingProjectId) || {};
+      data.id = APP.editingProjectId;
+      data.lat = (data.address !== old.address) ? null : old.lat;
+      data.lng = (data.address !== old.address) ? null : old.lng;
+      ok = await upsertProject(data);
+      if (ok === false) { showToast('Error al guardar el proyecto. Revisa la consola.', 'error'); return; }
+      showToast('Proyecto actualizado', 'success');
+    } else {
+      data.id = uid();
+      data.createdAt = new Date().toISOString();
+      data.lat = null; data.lng = null;
+      ok = await upsertProject(data);
+      if (ok === false) { showToast('Error al crear el proyecto. Revisa la consola.', 'error'); return; }
+      showToast('Proyecto creado', 'success');
+    }
+    closeProjectModal();
+    refreshCurrentView();
+  } catch (err) {
+    console.error('saveProject exception:', err);
+    showToast('Error inesperado al guardar. Intenta de nuevo.', 'error');
   }
-  closeProjectModal();
-  refreshCurrentView();
 }
 
 async function deleteProject(id) {
@@ -612,40 +622,6 @@ async function renderPipeline(category) {
   });
 }
 
-async function renderClientProjectsTable(clientId) {
-  const allProjects = await getProjects();
-  const projects = allProjects.filter(p => p.clientId === clientId);
-
-  const user = getCurrentUser();
-  const canEdit = user?.role === 'admin' || user?.role === 'normal';
-  const isReadOnly = !canEdit;
-
-  const tbody = $('#client-projects-body');
-  const empty = $('#client-projects-empty');
-
-  if (projects.length === 0) {
-    tbody.innerHTML = '';
-    empty.classList.remove('hidden');
-    return;
-  }
-  empty.classList.add('hidden');
-
-  tbody.innerHTML = projects.map(p => {
-    const stage = getStageInfo(p.stage, p.category);
-    const catInfo = CATEGORIES[p.category] || {};
-    return `<tr>
-      <td style="font-weight:600;cursor:pointer;color:var(--text-primary)" onclick="openProjectDetail('${p.id}')">${escHtml(p.name)}</td>
-      <td>${catInfo.icon || ''} ${catInfo.label || p.category || '—'}</td>
-      <td><span class="stage-badge" style="background:${stage.color}22;color:${stage.color}">${stage.label}</span></td>
-      <td style="font-weight:600;color:var(--success)">${formatCLP(p.value)}</td>
-      <td>${formatDate(p.date)}</td>
-      <td><div class="td-actions">
-        <button class="btn btn-sm btn-ghost" onclick="openProjectDetail('${p.id}')">Ver</button>
-        ${canEdit ? `<button class="btn btn-sm btn-secondary" onclick="openProjectModal('${p.id}')">Editar</button>` : ''}
-      </div></td>
-    </tr>`;
-  }).join('');
-}
 
 function buildProjectCard(p, color) {
   const cat = CATEGORIES[p.category] || CATEGORIES.legal;
@@ -902,6 +878,17 @@ async function deleteComment(id) {
 
 // ── TAREAS (PROJECT DETAIL) ──────────────────────────────────
 async function renderProjectTareas(projectId) {
+  const mode = APP.taskViewMode || 'table';
+  $('#project-tareas-table-container')?.classList.toggle('hidden', mode !== 'table');
+  $('#project-tareas-calendar-container')?.classList.toggle('hidden', mode !== 'calendar');
+
+  // Sync UI buttons appearance
+  $$('#project-tasks-view-toggle .btn').forEach(btn => btn.classList.toggle('active', btn.dataset.mode === mode));
+
+  if (mode === 'calendar') {
+    return renderTaskCalendar(null, projectId);
+  }
+
   let [tareas, users] = await Promise.all([getTareas(), getUsers()]);
   tareas = tareas.filter(t => t.projectId === projectId);
 
@@ -953,6 +940,7 @@ async function renderProjectTareas(projectId) {
     </tr>`;
   }).join('');
 }
+
 
 async function deleteProjectTarea(id) {
   if (!confirm('¿Seguro que deseas eliminar esta tarea?')) return;
@@ -1639,9 +1627,6 @@ async function exportGastosGlobal() {
   showToast('CSV exportado', 'success');
 }
 
-
-
-
 // ── LIGHTBOX ──────────────────────────────────────────────────
 function openLightboxData(dataUrl, fileType, fileName) {
   $('#lightbox-img').classList.add('hidden');
@@ -1676,12 +1661,6 @@ function openLightboxData(dataUrl, fileType, fileName) {
 async function openLightbox(gastoId) {
   const all = await getGastos();
   const g = all.find(g => g.id === gastoId);
-  if (!g?.receiptDataUrl) return;
-  openLightboxData(g.receiptDataUrl, 'image/jpeg', 'Boleta.jpg');
-}
-
-function openLightboxDirect(gastoId) {
-  const g = APP.reviewPending.find(g => g.id === gastoId);
   if (!g?.receiptDataUrl) return;
   openLightboxData(g.receiptDataUrl, 'image/jpeg', 'Boleta.jpg');
 }
@@ -2491,7 +2470,6 @@ async function renderCobranza() {
   }
 
   // Filter projects by current access (if the module checks access)
-  const isLegal = APP.currentCategory === 'legal';
   const gastosTotal = gastos.reduce((s, g) => s + (g.amount || 0), 0);
   const gastosCobrado = gastos.filter(g => g.cobrado).reduce((s, g) => s + (g.amount || 0), 0);
   const gastosPending = gastosTotal - gastosCobrado;
@@ -2716,20 +2694,24 @@ async function deleteCobro(id) {
   renderCobranza();
 }
 
-async function renderTaskCalendar(category) {
+async function renderTaskCalendar(category, projectId = null) {
   const [tareas, projects] = await Promise.all([getTareas(), getProjects()]);
-  const user = getCurrentUser();
 
-  // Filter tasks: assigned to user AND (if category exists, match project category)
-  let filtered = tareas.filter(t => t.userId === user?.id);
-  if (category) {
+  // Filter tasks:
+  let filtered = tareas;
+  if (projectId) {
+    filtered = filtered.filter(t => t.projectId === projectId);
+  } else if (category) {
     const projIds = projects.filter(p => p.category === category).map(p => p.id);
     filtered = filtered.filter(t => projIds.includes(t.projectId));
   }
 
-  const container = $('#task-calendar-grid');
-  const title = $('#task-cal-title');
+  const containerId = projectId ? '#project-task-calendar-grid' : '#task-calendar-grid';
+  const titleId = projectId ? '#project-task-cal-title' : '#task-cal-title';
+  const container = $(containerId);
+  const title = $(titleId);
   if (!container || !title) return;
+
 
   const date = APP.calendarDate;
   const month = date.getMonth();
@@ -2774,6 +2756,7 @@ async function renderTaskCalendar(category) {
         <div class="calendar-day-num">${d}</div>
         <div class="calendar-tasks">${taskHtml}</div>
       </div>`;
+
   }
 
   const remaining = 42 - (startDay + daysInMonth);
@@ -2792,9 +2775,13 @@ async function renderTareas(category) {
   $('#tareas-table-container')?.classList.toggle('hidden', mode !== 'table');
   $('#tareas-calendar-container')?.classList.toggle('hidden', mode !== 'calendar');
 
+  // Sync UI buttons appearance
+  $$('#tasks-view-toggle .btn').forEach(btn => btn.classList.toggle('active', btn.dataset.mode === mode));
+
   if (mode === 'calendar') {
     return renderTaskCalendar(category);
   }
+
 
   let [tareas, projects, users] = await Promise.all([getTareas(), getProjects(), getUsers()]);
 
@@ -3199,7 +3186,6 @@ async function init() {
     APP.calendarDate.setMonth(APP.calendarDate.getMonth() + 1);
     renderTaskCalendar(APP.currentCategory);
   });
-  $('#tareas-filter-status')?.addEventListener('change', () => renderTareas(APP.currentCategory));
 
   $('#btn-add-tarea')?.addEventListener('click', () => openTareaModal());
   $('#btn-project-add-tarea')?.addEventListener('click', () => {
@@ -3220,6 +3206,22 @@ async function init() {
   $('#modal-tarea')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeTareaModal(); });
   $('#tareas-filter-status')?.addEventListener('change', () => renderTareas(APP.currentCategory));
 
+  // Project task view toggle
+  $('#project-tasks-view-toggle')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    APP.taskViewMode = btn.dataset.mode;
+    renderProjectTareas(APP.currentProjectId);
+  });
+  $('#btn-project-task-cal-prev')?.addEventListener('click', () => {
+    APP.calendarDate.setMonth(APP.calendarDate.getMonth() - 1);
+    renderProjectTareas(APP.currentProjectId);
+  });
+  $('#btn-project-task-cal-next')?.addEventListener('click', () => {
+    APP.calendarDate.setMonth(APP.calendarDate.getMonth() + 1);
+    renderProjectTareas(APP.currentProjectId);
+  });
 }
+
 
 document.addEventListener('DOMContentLoaded', init);
