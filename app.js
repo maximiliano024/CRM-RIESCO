@@ -416,7 +416,7 @@ function closeProjectModal() {
 async function saveProject() {
   const name = $('#input-name').value.trim();
   const client = $('#input-client').value.trim();
-  if (!name || !client) { showToast('Nombre y cliente son obligatorios', 'error'); return; }
+  if (!name) { showToast('El nombre del proyecto es obligatorio', 'error'); return; }
 
   const category = $('#input-category').value;
   const subcategory = $('#input-subcategory').value;
