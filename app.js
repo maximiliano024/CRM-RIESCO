@@ -3012,10 +3012,10 @@ async function init() {
   if (btnMs) btnMs.addEventListener('click', doLoginMicrosoft);
 
   // Logout
-  $('#btn-logout').addEventListener('click', doLogout);
+  $('#btn-logout')?.addEventListener('click', doLogout);
 
   // Sidebar toggle (mobile)
-  $('#sidebar-toggle').addEventListener('click', () => $('#sidebar').classList.toggle('open'));
+  $('#sidebar-toggle')?.addEventListener('click', () => $('#sidebar').classList.toggle('open'));
 
   // Sidebar nav items (with category)
   $$('.nav-item[data-view]').forEach(item => {
@@ -3034,75 +3034,75 @@ async function init() {
   });
 
   // New Project
-  $('#btn-new-project').addEventListener('click', () => openProjectModal());
+  $('#btn-new-project')?.addEventListener('click', () => openProjectModal());
 
   // Project modal
-  $('#modal-project-close').addEventListener('click', closeProjectModal);
-  $('#modal-project-cancel').addEventListener('click', closeProjectModal);
-  $('#modal-project-save').addEventListener('click', saveProject);
-  $('#modal-project').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeProjectModal(); });
+  $('#modal-project-close')?.addEventListener('click', closeProjectModal);
+  $('#modal-project-cancel')?.addEventListener('click', closeProjectModal);
+  $('#modal-project-save')?.addEventListener('click', saveProject);
+  $('#modal-project')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeProjectModal(); });
 
 
   // Back button
-  $('#btn-back').addEventListener('click', () => {
+  $('#btn-back')?.addEventListener('click', () => {
     const cat = APP.currentCategory;
     const title = cat && CATEGORIES[cat] ? CATEGORIES[cat].label : 'Proyectos';
     showView('projects', title, cat);
   });
 
   // Edit/Delete project
-  $('#btn-edit-project').addEventListener('click', () => openProjectModal(APP.currentProjectId));
-  $('#btn-delete-project').addEventListener('click', () => deleteProject(APP.currentProjectId));
+  $('#btn-edit-project')?.addEventListener('click', () => openProjectModal(APP.currentProjectId));
+  $('#btn-delete-project')?.addEventListener('click', () => deleteProject(APP.currentProjectId));
 
   // Tabs
-  $$('.tab-btn').forEach(btn => btn.addEventListener('click', () => activateTab(btn.dataset.tab)));
+  $$('.tab-btn').forEach(btn => btn?.addEventListener('click', () => activateTab(btn.dataset.tab)));
 
   // Location modal
-  $('#btn-edit-location').addEventListener('click', openLocationModal);
-  $('#modal-location-close').addEventListener('click', closeLocationModal);
-  $('#modal-location-cancel').addEventListener('click', closeLocationModal);
-  $('#modal-location-save').addEventListener('click', saveLocation);
-  $('#btn-location-search').addEventListener('click', searchLocation);
-  $('#location-search-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') searchLocation(); });
-  $('#modal-location').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeLocationModal(); });
+  $('#btn-edit-location')?.addEventListener('click', openLocationModal);
+  $('#modal-location-close')?.addEventListener('click', closeLocationModal);
+  $('#modal-location-cancel')?.addEventListener('click', closeLocationModal);
+  $('#modal-location-save')?.addEventListener('click', saveLocation);
+  $('#btn-location-search')?.addEventListener('click', searchLocation);
+  $('#location-search-input')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') searchLocation(); });
+  $('#modal-location')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeLocationModal(); });
 
   // Comments
-  $('#btn-add-comment').addEventListener('click', addComment);
-  $('#comment-input').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) addComment(); });
+  $('#btn-add-comment')?.addEventListener('click', addComment);
+  $('#comment-input')?.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) addComment(); });
 
   // Files
-  $('#file-upload-input').addEventListener('change', (e) => handleFileUpload(e.target));
+  $('#file-upload-input')?.addEventListener('change', (e) => handleFileUpload(e.target));
 
   // Gastos — project detail
-  $('#btn-add-gasto').addEventListener('click', () => openGastoModal());
-  $('#modal-gasto-close').addEventListener('click', closeGastoModal);
-  $('#modal-gasto-cancel').addEventListener('click', closeGastoModal);
-  $('#modal-gasto-save').addEventListener('click', saveGasto);
-  $('#modal-gasto').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeGastoModal(); });
-  $('#gasto-filter-cat').addEventListener('change', (e) => renderGastos(APP.currentProjectId, e.target.value));
-  $('#btn-export-gastos').addEventListener('click', exportGastosCSV);
+  $('#btn-add-gasto')?.addEventListener('click', () => openGastoModal());
+  $('#modal-gasto-close')?.addEventListener('click', closeGastoModal);
+  $('#modal-gasto-cancel')?.addEventListener('click', closeGastoModal);
+  $('#modal-gasto-save')?.addEventListener('click', saveGasto);
+  $('#modal-gasto')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeGastoModal(); });
+  $('#gasto-filter-cat')?.addEventListener('change', (e) => renderGastos(APP.currentProjectId, e.target.value));
+  $('#btn-export-gastos')?.addEventListener('click', exportGastosCSV);
 
   // Gastos — global view
-  $('#btn-gg-add-gasto').addEventListener('click', () => openGastoModal());
-  $('#gg-filter-project').addEventListener('change', () => renderGastosGlobal(APP.currentCategory));
-  $('#gg-filter-cat').addEventListener('change', () => renderGastosGlobal(APP.currentCategory));
-  $('#btn-gg-export').addEventListener('click', exportGastosGlobal);
+  $('#btn-gg-add-gasto')?.addEventListener('click', () => openGastoModal());
+  $('#gg-filter-project')?.addEventListener('change', () => renderGastosGlobal(APP.currentCategory));
+  $('#gg-filter-cat')?.addEventListener('change', () => renderGastosGlobal(APP.currentCategory));
+  $('#btn-gg-export')?.addEventListener('click', exportGastosGlobal);
 
   // Receipt upload: button + drag & drop
-  $('#btn-select-receipt').addEventListener('click', () => $('#receipt-file-input').click());
-  $('#receipt-file-input').addEventListener('change', (e) => { if (e.target.files[0]) handleReceiptUpload(e.target.files[0]); e.target.value = ''; });
-  $('#receipt-upload-area').addEventListener('click', (e) => { if (e.target === e.currentTarget || e.target.closest('#receipt-placeholder')) $('#receipt-file-input').click(); });
-  $('#receipt-upload-area').addEventListener('dragover', (e) => { e.preventDefault(); e.currentTarget.classList.add('dragover'); });
-  $('#receipt-upload-area').addEventListener('dragleave', (e) => { e.currentTarget.classList.remove('dragover'); });
-  $('#receipt-upload-area').addEventListener('drop', (e) => {
+  $('#btn-select-receipt')?.addEventListener('click', () => $('#receipt-file-input').click());
+  $('#receipt-file-input')?.addEventListener('change', (e) => { if (e.target.files[0]) handleReceiptUpload(e.target.files[0]); e.target.value = ''; });
+  $('#receipt-upload-area')?.addEventListener('click', (e) => { if (e.target === e.currentTarget || e.target.closest('#receipt-placeholder')) $('#receipt-file-input').click(); });
+  $('#receipt-upload-area')?.addEventListener('dragover', (e) => { e.preventDefault(); e.currentTarget.classList.add('dragover'); });
+  $('#receipt-upload-area')?.addEventListener('dragleave', (e) => { e.currentTarget.classList.remove('dragover'); });
+  $('#receipt-upload-area')?.addEventListener('drop', (e) => {
     e.preventDefault(); e.currentTarget.classList.remove('dragover');
     const f = e.dataTransfer.files[0];
     if (f) handleReceiptUpload(f);
   });
-  $('#btn-remove-receipt').addEventListener('click', () => { APP.receiptDataUrl = null; resetReceiptUI(); });
+  $('#btn-remove-receipt')?.addEventListener('click', () => { APP.receiptDataUrl = null; resetReceiptUI(); });
 
   // Project search
-  $('#project-search').addEventListener('input', (e) => renderProjectsTable(APP.currentCategory, e.target.value));
+  $('#project-search')?.addEventListener('input', (e) => renderProjectsTable(APP.currentCategory, e.target.value));
 
   // Admin — User modal
   $('#btn-add-user').addEventListener('click', () => openUserModal());
