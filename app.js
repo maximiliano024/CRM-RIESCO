@@ -4,7 +4,7 @@
    ============================================================ */
 'use strict';
 
-console.log('CRM Riesco y Asociados - app.js v1.4.4 loaded (Clean State)');
+console.log('CRM Riesco y Asociados - app.js v1.4.5 loaded (Clean State)');
 
 // ── STATE ────────────────────────────────────────────────────
 const APP = {
@@ -179,6 +179,8 @@ function bootApp(user) {
   // Hide admin nav item if not admin
   if (user.role !== 'admin') {
     $$('.nav-admin-only').forEach(el => el.style.display = 'none');
+    const navCobranza = $('#nav-cobranza');
+    if (navCobranza) navCobranza.style.display = 'none';
   }
 
   // Hide category groups user has no access to
@@ -2472,6 +2474,13 @@ function switchCobTab(tab) {
 }
 
 async function renderCobranza() {
+  const user = getCurrentUser();
+  if (user?.role !== 'admin') {
+    showToast('Acceso denegado a Cobranza', 'error');
+    showView('dashboard', 'Dashboard', null);
+    return;
+  }
+
   APP.currentView = 'cobranza';
   const currentUser = getCurrentUser();
   let [gastos, cobros, projects] = await Promise.all([getGastos(), getCobros(), getProjects()]);
