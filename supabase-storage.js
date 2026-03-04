@@ -117,11 +117,35 @@ function userToRow(u) {
     };
 }
 
+
+// ── RETRY HELPER ─────────────────────────────────────────────
+// Reintenta una función async hasta `maxRetries` veces con backoff exponencial.
+// Resuelve fallos intermitentes por red / timeout transitorio de Supabase.
+async function fetchWithRetry(fn, maxRetries = 3) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            const result = await fn();
+            // Si Supabase devuelve error, lanzamos para que el catch lo capture
+            if (result && result.error) {
+                throw new Error(result.error.message || 'Supabase error');
+            }
+            return result;
+        } catch (err) {
+            console.warn(`fetchWithRetry attempt ${attempt}/${maxRetries} failed:`, err.message);
+            if (attempt === maxRetries) throw err;
+            // Espera exponencial: 1s, 2s, 4s…
+            await new Promise(res => setTimeout(res, 1000 * Math.pow(2, attempt - 1)));
+        }
+    }
+}
+
 // ── PROJECTS ──────────────────────────────────────────────────
 async function getProjects() {
-    const { data, error } = await _supabase.from('projects').select('*').order('created_at', { ascending: false });
-    if (error) { console.error('getProjects:', error); return []; }
-    return (data || []).map(rowToProject);
+    try {
+        const { data, error } = await fetchWithRetry(() => _supabase.from('projects').select('*').order('created_at', { ascending: false }));
+        if (error) { console.error('getProjects:', error); return []; }
+        return (data || []).map(rowToProject);
+    } catch (err) { console.error('getProjects failed after retries:', err); return []; }
 }
 
 async function saveProjects(projects) {
@@ -150,9 +174,11 @@ async function deleteProjectById(id) {
 
 // ── CLIENTS ───────────────────────────────────────────────────
 async function getClients() {
-    const { data, error } = await _supabase.from('clients').select('*').order('created_at', { ascending: false });
-    if (error) { console.error('getClients:', error); return []; }
-    return (data || []).map(rowToClient);
+    try {
+        const { data, error } = await fetchWithRetry(() => _supabase.from('clients').select('*').order('created_at', { ascending: false }));
+        if (error) { console.error('getClients:', error); return []; }
+        return (data || []).map(rowToClient);
+    } catch (err) { console.error('getClients failed after retries:', err); return []; }
 }
 
 async function upsertClient(c) {
@@ -167,9 +193,11 @@ async function deleteClientById(id) {
 
 // ── GASTOS ────────────────────────────────────────────────────
 async function getGastos() {
-    const { data, error } = await _supabase.from('gastos').select('*').order('created_at', { ascending: false });
-    if (error) { console.error('getGastos:', error); return []; }
-    return (data || []).map(rowToGasto);
+    try {
+        const { data, error } = await fetchWithRetry(() => _supabase.from('gastos').select('*').order('created_at', { ascending: false }));
+        if (error) { console.error('getGastos:', error); return []; }
+        return (data || []).map(rowToGasto);
+    } catch (err) { console.error('getGastos failed after retries:', err); return []; }
 }
 
 async function upsertGasto(g) {
@@ -217,9 +245,11 @@ function cobroToRow(c) {
     };
 }
 async function getCobros() {
-    const { data, error } = await _supabase.from('cobros').select('*').order('created_at', { ascending: false });
-    if (error) { console.error('getCobros:', error); return []; }
-    return (data || []).map(rowToCobro);
+    try {
+        const { data, error } = await fetchWithRetry(() => _supabase.from('cobros').select('*').order('created_at', { ascending: false }));
+        if (error) { console.error('getCobros:', error); return []; }
+        return (data || []).map(rowToCobro);
+    } catch (err) { console.error('getCobros failed after retries:', err); return []; }
 }
 async function upsertCobro(c) {
     const { error } = await _supabase.from('cobros').upsert(cobroToRow(c), { onConflict: 'id' });
@@ -232,9 +262,11 @@ async function deleteCobroById(id) {
 
 // ── COMMENTS ─────────────────────────────────────────────────
 async function getComments() {
-    const { data, error } = await _supabase.from('comments').select('*').order('created_at', { ascending: true });
-    if (error) { console.error('getComments:', error); return []; }
-    return (data || []).map(rowToComment);
+    try {
+        const { data, error } = await fetchWithRetry(() => _supabase.from('comments').select('*').order('created_at', { ascending: true }));
+        if (error) { console.error('getComments:', error); return []; }
+        return (data || []).map(rowToComment);
+    } catch (err) { console.error('getComments failed after retries:', err); return []; }
 }
 
 async function upsertComment(c) {
@@ -268,9 +300,11 @@ async function uploadFileToStorage(projectId, fileId, fileObj) {
 }
 
 async function getFiles() {
-    const { data, error } = await _supabase.from('files').select('*').order('created_at', { ascending: false });
-    if (error) { console.error('getFiles:', error); return []; }
-    return (data || []).map(rowToFile);
+    try {
+        const { data, error } = await fetchWithRetry(() => _supabase.from('files').select('*').order('created_at', { ascending: false }));
+        if (error) { console.error('getFiles:', error); return []; }
+        return (data || []).map(rowToFile);
+    } catch (err) { console.error('getFiles failed after retries:', err); return []; }
 }
 
 async function upsertFile(f) {
@@ -299,9 +333,11 @@ function tareaToRow(t) {
     };
 }
 async function getTareas() {
-    const { data, error } = await _supabase.from('tareas').select('*').order('due_date', { ascending: true });
-    if (error) { console.error('getTareas:', error); return []; }
-    return (data || []).map(rowToTarea);
+    try {
+        const { data, error } = await fetchWithRetry(() => _supabase.from('tareas').select('*').order('due_date', { ascending: true }));
+        if (error) { console.error('getTareas:', error); return []; }
+        return (data || []).map(rowToTarea);
+    } catch (err) { console.error('getTareas failed after retries:', err); return []; }
 }
 async function upsertTarea(t) {
     const { error } = await _supabase.from('tareas').upsert(tareaToRow(t), { onConflict: 'id' });
@@ -314,9 +350,11 @@ async function deleteTareaById(id) {
 
 // ── USERS ─────────────────────────────────────────────────────
 async function getUsers() {
-    const { data, error } = await _supabase.from('users').select('*').order('created_at', { ascending: true });
-    if (error) { console.error('getUsers:', error); return []; }
-    return (data || []).map(rowToUser);
+    try {
+        const { data, error } = await fetchWithRetry(() => _supabase.from('users').select('*').order('created_at', { ascending: true }));
+        if (error) { console.error('getUsers:', error); return []; }
+        return (data || []).map(rowToUser);
+    } catch (err) { console.error('getUsers failed after retries:', err); return []; }
 }
 
 async function upsertUser(u) {

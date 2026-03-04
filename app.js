@@ -4,7 +4,7 @@
    ============================================================ */
 'use strict';
 
-console.log('CRM Riesco y Asociados - app.js v1.4.1 loaded (Clean State)');
+console.log('CRM Riesco y Asociados - app.js v1.4.2 loaded (Clean State)');
 
 // ── STATE ────────────────────────────────────────────────────
 const APP = {
@@ -27,7 +27,9 @@ const APP = {
   chart: null,
   taskViewMode: 'table', // 'table' | 'calendar'
   calendarDate: new Date(),
+  booted: false,  // evita doble bootApp() por onAuthStateChange doble disparo
 };
+
 
 const STAGES = {
   legal: [
@@ -2732,6 +2734,9 @@ async function init() {
   // Escuchar sesión en tiempo real de Supabase (Microsoft Graph)
   _supabase.auth.onAuthStateChange(async (event, session) => {
     if (session && session.user) {
+      // Evitar doble boot: onAuthStateChange puede dispararse con INITIAL_SESSION + SIGNED_IN
+      if (APP.booted) return;
+
       const email = session.user.email;
       const name = session.user.user_metadata?.full_name || email.split('@')[0];
 
@@ -2757,10 +2762,12 @@ async function init() {
         localStorage.setItem('ms_graph_token', session.provider_token);
       }
 
+      APP.booted = true;
       setCurrentUser(dbUser);
       bootApp(dbUser);
     } else {
       // No hay sesión
+      APP.booted = false;
       clearSession();
       const shell = $('#app-shell');
       const login = $('#login-screen');
