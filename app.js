@@ -335,10 +335,15 @@ async function openProjectModal(projectId = null, defaultStage = null) {
   resetCoverUI();
 
   // Populate client dropdown
-  const clients = await getClients();
+  const [clients, users] = await Promise.all([getClients(), getUsers()]);
   const sel = $('#input-client');
   sel.innerHTML = '<option value="">— Seleccionar empresa —</option>' +
     clients.map(c => `<option value="${escHtml(c.name)}">${escHtml(c.name)}</option>`).join('');
+
+  // Populate responsible dropdown with registered users
+  const respSel = $('#input-responsible');
+  respSel.innerHTML = '<option value="">— Seleccionar responsable —</option>' +
+    users.map(u => `<option value="${escHtml(u.name)}">${escHtml(u.name)}</option>`).join('');
 
   if (projectId) {
     const projects = await getProjects();
@@ -362,6 +367,10 @@ async function openProjectModal(projectId = null, defaultStage = null) {
 
     $('#input-value').value = p.value || '';
     $('#input-date').value = p.date || '';
+    // If the stored responsible name isn't in the users list, add it as a legacy option
+    if (p.responsible && !users.find(u => u.name === p.responsible)) {
+      respSel.innerHTML += `<option value="${escHtml(p.responsible)}">${escHtml(p.responsible)} (legado)</option>`;
+    }
     $('#input-responsible').value = p.responsible || '';
     $('#input-address').value = p.address || '';
     $('#input-description').value = p.description || '';
