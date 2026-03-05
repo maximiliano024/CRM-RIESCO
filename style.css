@@ -1244,12 +1244,18 @@ select {
   inset: 0;
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(4px);
-  z-index: 200;
+  z-index: 1000;
+  /* Increased to ensure it's above leaflet */
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
   animation: fadeIn 0.15s ease;
+}
+
+/* Fix for Leaflet map overlapping modals */
+.leaflet-container {
+  z-index: 1 !important;
 }
 
 .modal {
