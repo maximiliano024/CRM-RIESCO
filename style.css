@@ -2864,6 +2864,7 @@ body.read-only .add-card-btn {
   padding: 8px;
   position: relative;
   transition: var(--transition);
+  overflow: hidden;
 }
 
 .calendar-day:hover {
@@ -2897,6 +2898,8 @@ body.read-only .add-card-btn {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  overflow: hidden;
+  min-width: 0;
 }
 
 .cal-task-item {
