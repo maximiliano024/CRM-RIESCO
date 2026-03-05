@@ -568,9 +568,8 @@ function renderPipelineChart(projects) {
   });
 }
 
-// ── PIPELINE ──────────────────────────────────────────────────
 async function renderPipeline(category) {
-  const allProjects = await getProjects();
+  const [allProjects, allTasks] = await Promise.all([getProjects(), getTareas()]);
   let projects = allProjects.filter(p => p.category === category);
   const user = getCurrentUser();
   const isReadOnly = !(user?.role === 'admin' || user?.role === 'normal');
@@ -603,7 +602,7 @@ async function renderPipeline(category) {
     if (staged.length === 0) {
       col.innerHTML = `<div class="empty-state" style="padding:24px 12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:32px;height:32px;opacity:0.3"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><p style="font-size:12px">Sin proyectos</p></div>`;
     } else {
-      col.innerHTML = staged.map(p => buildProjectCard(p, s.color)).join('');
+      col.innerHTML = staged.map(p => buildProjectCard(p, s.color, allTasks)).join('');
     }
 
     if (!isReadOnly) {
@@ -632,14 +631,27 @@ async function renderPipeline(category) {
 }
 
 
-function buildProjectCard(p, color) {
+function buildProjectCard(p, color, allTasks = []) {
   const cat = CATEGORIES[p.category] || CATEGORIES.legal;
   const coverHtml = p.coverDataUrl ? `<div class="project-card-cover" style="background-image:url('${p.coverDataUrl}')"></div>` : '';
+
+  // Calculate Task Warnings
+  const projectTasks = allTasks.filter(t => t.projectId === p.id);
+  const overdueTasks = projectTasks.filter(t => t.status !== 'completada' && t.dueDate && new Date(t.dueDate) < new Date(today()));
+
+  let warningsHtml = '';
+  if (projectTasks.length === 0) {
+    warningsHtml = `<div class="pc-warning pc-warning-empty">⚠️ Sin tareas asignadas</div>`;
+  } else if (overdueTasks.length > 0) {
+    warningsHtml = `<div class="pc-warning pc-warning-overdue">🚨 ${overdueTasks.length} tarea(s) vencida(s)</div>`;
+  }
+
   return `<div class="project-card" draggable="true" data-id="${p.id}" style="--stage-color:${color}"
     ondragstart="onDragStart(event,'${p.id}')" ondragend="onDragEnd(event)"
     onclick="openProjectDetail('${p.id}')">
     ${coverHtml}
     <div class="pc-name">${escHtml(p.name)}${p.subcategory ? `<span class="subcategory-badge">${escHtml(p.subcategory)}</span>` : ''}</div>
+    ${warningsHtml}
     <div class="pc-client"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${escHtml(p.client)}</div>
     ${p.description ? `<div style="font-size:12px;color:var(--text-muted);line-height:1.4;margin-bottom:6px">${escHtml(p.description.slice(0, 80))}${p.description.length > 80 ? '…' : ''}</div>` : ''}
     <div class="pc-footer">
@@ -654,7 +666,8 @@ function onDragEnd(e) { e.currentTarget.classList.remove('dragging'); }
 
 // ── PROJECTS TABLE ────────────────────────────────────────────
 async function renderProjectsTable(category, filter = '') {
-  let projects = (await getProjects()).filter(p => p.category === category);
+  const [allProjects, allTasks] = await Promise.all([getProjects(), getTareas()]);
+  let projects = allProjects.filter(p => p.category === category);
 
   if (filter) {
     const q = filter.toLowerCase();
@@ -677,10 +690,24 @@ async function renderProjectsTable(category, filter = '') {
   tbody.innerHTML = projects.map(p => {
     const s = getStageInfo(p.stage, p.category);
     const cat = CATEGORIES[p.category] || CATEGORIES.legal;
+
+    const projectTasks = allTasks.filter(t => t.projectId === p.id);
+    const overdueTasks = projectTasks.filter(t => t.status !== 'completada' && t.dueDate && new Date(t.dueDate) < new Date(today()));
+
+    let warningBadge = '';
+    if (projectTasks.length === 0) {
+      warningBadge = `<span class="table-warning table-warning-empty" title="Sin tareas asignadas">⚠️ Sin tareas</span>`;
+    } else if (overdueTasks.length > 0) {
+      warningBadge = `<span class="table-warning table-warning-overdue" title="${overdueTasks.length} tarea(s) vencida(s)">🚨 ${overdueTasks.length} vencida(s)</span>`;
+    }
+
     return `<tr>
       <td style="font-weight:600;color:var(--text-primary);cursor:pointer" onclick="openProjectDetail('${p.id}')">
-        ${escHtml(p.name)}
-        ${p.subcategory ? `<span class="subcategory-badge">${escHtml(p.subcategory)}</span>` : ''}
+        <div style="display:flex;align-items:center;gap:8px">
+          <span>${escHtml(p.name)}</span>
+          ${p.subcategory ? `<span class="subcategory-badge">${escHtml(p.subcategory)}</span>` : ''}
+          ${warningBadge}
+        </div>
       </td>
       <td>${escHtml(p.client)}</td>
       <td><span class="cat-badge ${p.category}">${cat.icon} ${cat.label}</span></td>
