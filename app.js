@@ -4,7 +4,7 @@
    ============================================================ */
 'use strict';
 
-console.log('CRM Riesco y Asociados - app.js v1.4.5 loaded (Clean State)');
+console.log('CRM Riesco y Asociados - app.js v1.4.6 loaded (Speed Update)');
 
 // ── STATE ────────────────────────────────────────────────────
 const APP = {
@@ -617,13 +617,19 @@ async function renderPipeline(category) {
         const ps = await getProjects();
         const p = ps.find(pr => pr.id === id);
         if (p && p.stage !== s.id) {
-          const success = await updateProjectStage(id, s.id);
-          if (success) {
-            showToast(`Movido a "${s.label}"`, 'success');
-          } else {
-            showToast('Error al cambiar etapa. Intenta de nuevo.', 'error');
-          }
+          const oldStage = p.stage;
+          p.stage = s.id;
           renderPipeline(category);
+
+          updateProjectStage(id, s.id).then(success => {
+            if (success) {
+              showToast(`Movido a "${s.label}"`, 'success');
+            } else {
+              p.stage = oldStage;
+              renderPipeline(category);
+              showToast('Error al cambiar etapa. Intenta de nuevo.', 'error');
+            }
+          });
         }
       };
     }

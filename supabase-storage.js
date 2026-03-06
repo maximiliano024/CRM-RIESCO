@@ -5,6 +5,17 @@
    ============================================================ */
 'use strict';
 
+// ── CACHE LAYER ──────────────────────────────────────────────
+window.DB_CACHE = {
+    projects: null, clients: null, gastos: null, cobros: null,
+    comments: null, files: null, tareas: null, users: null
+};
+
+window.invalidateCache = (key) => {
+    if (key && window.DB_CACHE[key] !== undefined) window.DB_CACHE[key] = null;
+    else Object.keys(window.DB_CACHE).forEach(k => window.DB_CACHE[k] = null);
+};
+
 // ── HELPERS ──────────────────────────────────────────────────
 // Convierte snake_case de Postgres → camelCase de la app
 function rowToProject(r) {
@@ -143,98 +154,141 @@ async function fetchWithRetry(fn, maxRetries = 3) {
 }
 
 // ── PROJECTS ──────────────────────────────────────────────────
-async function getProjects() {
+async function getProjects(force = false) {
+    if (!force && window.DB_CACHE.projects) return window.DB_CACHE.projects;
     try {
         const { data, error } = await fetchWithRetry(() => _supabase.from('projects').select('*').order('created_at', { ascending: false }));
         if (error) { console.error('getProjects:', error); return []; }
-        return (data || []).map(rowToProject);
+        window.DB_CACHE.projects = (data || []).map(rowToProject);
+        return window.DB_CACHE.projects;
     } catch (err) { console.error('getProjects failed after retries:', err); return []; }
 }
 
 async function saveProjects(projects) {
-    // Upsert full list — más sencillo para mantener sincronía
     if (!projects.length) return;
     const { error } = await _supabase.from('projects').upsert(projects.map(projectToRow), { onConflict: 'id' });
     if (error) console.error('saveProjects:', error);
+    window.DB_CACHE.projects = null;
 }
 
 async function upsertProject(p) {
+    if (window.DB_CACHE.projects) {
+        const idx = window.DB_CACHE.projects.findIndex(x => x.id === p.id);
+        if (idx !== -1) window.DB_CACHE.projects[idx] = { ...window.DB_CACHE.projects[idx], ...p };
+        else window.DB_CACHE.projects.unshift(p);
+    }
     const { error } = await _supabase.from('projects').upsert(projectToRow(p), { onConflict: 'id' });
-    if (error) { console.error('upsertProject:', error); return error; }
+    if (error) { console.error('upsertProject:', error); window.DB_CACHE.projects = null; return error; }
     return true;
 }
 
 async function updateProjectStage(id, stage) {
+    if (window.DB_CACHE.projects) {
+        const p = window.DB_CACHE.projects.find(x => x.id === id);
+        if (p) p.stage = stage;
+    }
     const { error } = await _supabase.from('projects').update({ stage }).eq('id', id);
-    if (error) { console.error('updateProjectStage:', error); return false; }
+    if (error) { console.error('updateProjectStage:', error); window.DB_CACHE.projects = null; return false; }
     return true;
 }
 
 async function deleteProjectById(id) {
+    if (window.DB_CACHE.projects) {
+        window.DB_CACHE.projects = window.DB_CACHE.projects.filter(x => x.id !== id);
+    }
     // Cascade deletes gastos, comments, files via FK
     const { error } = await _supabase.from('projects').delete().eq('id', id);
     if (error) console.error('deleteProjectById:', error);
+    window.DB_CACHE.gastos = null; window.DB_CACHE.comments = null; window.DB_CACHE.files = null;
 }
 
 // ── CLIENTS ───────────────────────────────────────────────────
-async function getClients() {
+async function getClients(force = false) {
+    if (!force && window.DB_CACHE.clients) return window.DB_CACHE.clients;
     try {
         const { data, error } = await fetchWithRetry(() => _supabase.from('clients').select('*').order('created_at', { ascending: false }));
         if (error) { console.error('getClients:', error); return []; }
-        return (data || []).map(rowToClient);
+        window.DB_CACHE.clients = (data || []).map(rowToClient);
+        return window.DB_CACHE.clients;
     } catch (err) { console.error('getClients failed after retries:', err); return []; }
 }
 
 async function upsertClient(c) {
+    if (window.DB_CACHE.clients) {
+        const idx = window.DB_CACHE.clients.findIndex(x => x.id === c.id);
+        if (idx !== -1) window.DB_CACHE.clients[idx] = { ...window.DB_CACHE.clients[idx], ...c };
+        else window.DB_CACHE.clients.unshift(c);
+    }
     const { error } = await _supabase.from('clients').upsert(clientToRow(c), { onConflict: 'id' });
-    if (error) console.error('upsertClient:', error);
+    if (error) { console.error('upsertClient:', error); window.DB_CACHE.clients = null; }
 }
 
 async function deleteClientById(id) {
+    if (window.DB_CACHE.clients) {
+        window.DB_CACHE.clients = window.DB_CACHE.clients.filter(x => x.id !== id);
+    }
     const { error } = await _supabase.from('clients').delete().eq('id', id);
-    if (error) console.error('deleteClientById:', error);
+    if (error) { console.error('deleteClientById:', error); window.DB_CACHE.clients = null; }
 }
 
 // ── GASTOS ────────────────────────────────────────────────────
-async function getGastos() {
+async function getGastos(force = false) {
+    if (!force && window.DB_CACHE.gastos) return window.DB_CACHE.gastos;
     try {
         const { data, error } = await fetchWithRetry(() => _supabase.from('gastos').select('*').order('created_at', { ascending: false }));
         if (error) { console.error('getGastos:', error); return []; }
-        return (data || []).map(rowToGasto);
+        window.DB_CACHE.gastos = (data || []).map(rowToGasto);
+        return window.DB_CACHE.gastos;
     } catch (err) { console.error('getGastos failed after retries:', err); return []; }
 }
 
 async function upsertGasto(g) {
+    if (window.DB_CACHE.gastos) {
+        const idx = window.DB_CACHE.gastos.findIndex(x => x.id === g.id);
+        if (idx !== -1) window.DB_CACHE.gastos[idx] = { ...window.DB_CACHE.gastos[idx], ...g };
+        else window.DB_CACHE.gastos.unshift(g);
+    }
     const { error } = await _supabase.from('gastos').upsert(gastoToRow(g), { onConflict: 'id' });
-    if (error) console.error('upsertGasto:', error);
+    if (error) { console.error('upsertGasto:', error); window.DB_CACHE.gastos = null; }
 }
 
 async function deleteGastoById(id) {
+    if (window.DB_CACHE.gastos) {
+        window.DB_CACHE.gastos = window.DB_CACHE.gastos.filter(x => x.id !== id);
+    }
     const { error } = await _supabase.from('gastos').delete().eq('id', id);
-    if (error) console.error('deleteGastoById:', error);
+    if (error) { console.error('deleteGastoById:', error); window.DB_CACHE.gastos = null; }
 }
 
 async function updateGastoStatus(id, status, reviewNote = null) {
-    const { error } = await _supabase.from('gastos')
-        .update({ status, review_note: reviewNote })
-        .eq('id', id);
-    if (error) console.error('updateGastoStatus:', error);
+    if (window.DB_CACHE.gastos) {
+        const g = window.DB_CACHE.gastos.find(x => x.id === id);
+        if (g) { g.status = status; g.reviewNote = reviewNote; }
+    }
+    const { error } = await _supabase.from('gastos').update({ status, review_note: reviewNote }).eq('id', id);
+    if (error) { console.error('updateGastoStatus:', error); window.DB_CACHE.gastos = null; }
 }
 
 async function updateGastoCobrado(id, cobrado, fechaCobro = null) {
-    const { error } = await _supabase.from('gastos')
-        .update({ cobrado, fecha_cobro: fechaCobro })
-        .eq('id', id);
-    if (error) console.error('updateGastoCobrado:', error);
+    if (window.DB_CACHE.gastos) {
+        const g = window.DB_CACHE.gastos.find(x => x.id === id);
+        if (g) { g.cobrado = cobrado; g.fechaCobro = fechaCobro; }
+    }
+    const { error } = await _supabase.from('gastos').update({ cobrado, fecha_cobro: fechaCobro }).eq('id', id);
+    if (error) { console.error('updateGastoCobrado:', error); window.DB_CACHE.gastos = null; }
 }
 
 // Actualiza un campo individual de un gasto (para edición inline tipo Excel).
 // field: nombre del campo en camelCase → se convierte a snake_case automáticamente.
 const _camelToSnake = s => s.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`);
 async function updateGastoField(id, field, value) {
+    if (window.DB_CACHE.gastos) {
+        const g = window.DB_CACHE.gastos.find(x => x.id === id);
+        if (g) g[field] = value;
+    }
     const col = _camelToSnake(field);
     const { error } = await _supabase.from('gastos').update({ [col]: value }).eq('id', id);
-    if (error) { console.error('updateGastoField:', error); return false; }
+    if (error) { console.error('updateGastoField:', error); window.DB_CACHE.gastos = null; return false; }
     return true;
 }
 
@@ -259,39 +313,59 @@ function cobroToRow(c) {
         notes: c.notes || null,
     };
 }
-async function getCobros() {
+async function getCobros(force = false) {
+    if (!force && window.DB_CACHE.cobros) return window.DB_CACHE.cobros;
     try {
         const { data, error } = await fetchWithRetry(() => _supabase.from('cobros').select('*').order('created_at', { ascending: false }));
         if (error) { console.error('getCobros:', error); return []; }
-        return (data || []).map(rowToCobro);
+        window.DB_CACHE.cobros = (data || []).map(rowToCobro);
+        return window.DB_CACHE.cobros;
     } catch (err) { console.error('getCobros failed after retries:', err); return []; }
 }
 async function upsertCobro(c) {
+    if (window.DB_CACHE.cobros) {
+        const idx = window.DB_CACHE.cobros.findIndex(x => x.id === c.id);
+        if (idx !== -1) window.DB_CACHE.cobros[idx] = { ...window.DB_CACHE.cobros[idx], ...c };
+        else window.DB_CACHE.cobros.unshift(c);
+    }
     const { error } = await _supabase.from('cobros').upsert(cobroToRow(c), { onConflict: 'id' });
-    if (error) console.error('upsertCobro:', error);
+    if (error) { console.error('upsertCobro:', error); window.DB_CACHE.cobros = null; }
 }
 async function deleteCobroById(id) {
+    if (window.DB_CACHE.cobros) {
+        window.DB_CACHE.cobros = window.DB_CACHE.cobros.filter(x => x.id !== id);
+    }
     const { error } = await _supabase.from('cobros').delete().eq('id', id);
-    if (error) console.error('deleteCobroById:', error);
+    if (error) { console.error('deleteCobroById:', error); window.DB_CACHE.cobros = null; }
 }
 
 // ── COMMENTS ─────────────────────────────────────────────────
-async function getComments() {
+async function getComments(force = false) {
+    if (!force && window.DB_CACHE.comments) return window.DB_CACHE.comments;
     try {
         const { data, error } = await fetchWithRetry(() => _supabase.from('comments').select('*').order('created_at', { ascending: true }));
         if (error) { console.error('getComments:', error); return []; }
-        return (data || []).map(rowToComment);
+        window.DB_CACHE.comments = (data || []).map(rowToComment);
+        return window.DB_CACHE.comments;
     } catch (err) { console.error('getComments failed after retries:', err); return []; }
 }
 
 async function upsertComment(c) {
+    if (window.DB_CACHE.comments) {
+        const idx = window.DB_CACHE.comments.findIndex(x => x.id === c.id);
+        if (idx !== -1) window.DB_CACHE.comments[idx] = { ...window.DB_CACHE.comments[idx], ...c };
+        else window.DB_CACHE.comments.push(c);
+    }
     const { error } = await _supabase.from('comments').upsert(commentToRow(c), { onConflict: 'id' });
-    if (error) console.error('upsertComment:', error);
+    if (error) { console.error('upsertComment:', error); window.DB_CACHE.comments = null; }
 }
 
 async function deleteCommentById(id) {
+    if (window.DB_CACHE.comments) {
+        window.DB_CACHE.comments = window.DB_CACHE.comments.filter(x => x.id !== id);
+    }
     const { error } = await _supabase.from('comments').delete().eq('id', id);
-    if (error) console.error('deleteCommentById:', error);
+    if (error) { console.error('deleteCommentById:', error); window.DB_CACHE.comments = null; }
 }
 
 // ── FILES ─────────────────────────────────────────────────────
@@ -314,22 +388,32 @@ async function uploadFileToStorage(projectId, fileId, fileObj) {
     return urlData.publicUrl;
 }
 
-async function getFiles() {
+async function getFiles(force = false) {
+    if (!force && window.DB_CACHE.files) return window.DB_CACHE.files;
     try {
         const { data, error } = await fetchWithRetry(() => _supabase.from('files').select('*').order('created_at', { ascending: false }));
         if (error) { console.error('getFiles:', error); return []; }
-        return (data || []).map(rowToFile);
+        window.DB_CACHE.files = (data || []).map(rowToFile);
+        return window.DB_CACHE.files;
     } catch (err) { console.error('getFiles failed after retries:', err); return []; }
 }
 
 async function upsertFile(f) {
+    if (window.DB_CACHE.files) {
+        const idx = window.DB_CACHE.files.findIndex(x => x.id === f.id);
+        if (idx !== -1) window.DB_CACHE.files[idx] = { ...window.DB_CACHE.files[idx], ...f };
+        else window.DB_CACHE.files.unshift(f);
+    }
     const { error } = await _supabase.from('files').upsert(fileToRow(f), { onConflict: 'id' });
-    if (error) console.error('upsertFile:', error);
+    if (error) { console.error('upsertFile:', error); window.DB_CACHE.files = null; }
 }
 
 async function deleteFileById(id) {
+    if (window.DB_CACHE.files) {
+        window.DB_CACHE.files = window.DB_CACHE.files.filter(x => x.id !== id);
+    }
     const { error } = await _supabase.from('files').delete().eq('id', id);
-    if (error) console.error('deleteFileById:', error);
+    if (error) { console.error('deleteFileById:', error); window.DB_CACHE.files = null; }
 }
 
 // ── TAREAS ──────────────────────────────────────────────────
@@ -347,37 +431,57 @@ function tareaToRow(t) {
         status: t.status || 'pendiente',
     };
 }
-async function getTareas() {
+async function getTareas(force = false) {
+    if (!force && window.DB_CACHE.tareas) return window.DB_CACHE.tareas;
     try {
         const { data, error } = await fetchWithRetry(() => _supabase.from('tareas').select('*').order('due_date', { ascending: true }));
         if (error) { console.error('getTareas:', error); return []; }
-        return (data || []).map(rowToTarea);
+        window.DB_CACHE.tareas = (data || []).map(rowToTarea);
+        return window.DB_CACHE.tareas;
     } catch (err) { console.error('getTareas failed after retries:', err); return []; }
 }
 async function upsertTarea(t) {
+    if (window.DB_CACHE.tareas) {
+        const idx = window.DB_CACHE.tareas.findIndex(x => x.id === t.id);
+        if (idx !== -1) window.DB_CACHE.tareas[idx] = { ...window.DB_CACHE.tareas[idx], ...t };
+        else window.DB_CACHE.tareas.push(t);
+    }
     const { error } = await _supabase.from('tareas').upsert(tareaToRow(t), { onConflict: 'id' });
-    if (error) console.error('upsertTarea:', error);
+    if (error) { console.error('upsertTarea:', error); window.DB_CACHE.tareas = null; }
 }
 async function deleteTareaById(id) {
+    if (window.DB_CACHE.tareas) {
+        window.DB_CACHE.tareas = window.DB_CACHE.tareas.filter(x => x.id !== id);
+    }
     const { error } = await _supabase.from('tareas').delete().eq('id', id);
-    if (error) console.error('deleteTareaById:', error);
+    if (error) { console.error('deleteTareaById:', error); window.DB_CACHE.tareas = null; }
 }
 
 // ── USERS ─────────────────────────────────────────────────────
-async function getUsers() {
+async function getUsers(force = false) {
+    if (!force && window.DB_CACHE.users) return window.DB_CACHE.users;
     try {
         const { data, error } = await fetchWithRetry(() => _supabase.from('users').select('*').order('created_at', { ascending: true }));
         if (error) { console.error('getUsers:', error); return []; }
-        return (data || []).map(rowToUser);
+        window.DB_CACHE.users = (data || []).map(rowToUser);
+        return window.DB_CACHE.users;
     } catch (err) { console.error('getUsers failed after retries:', err); return []; }
 }
 
 async function upsertUser(u) {
+    if (window.DB_CACHE.users) {
+        const idx = window.DB_CACHE.users.findIndex(x => x.id === u.id);
+        if (idx !== -1) window.DB_CACHE.users[idx] = { ...window.DB_CACHE.users[idx], ...u };
+        else window.DB_CACHE.users.push(u);
+    }
     const { error } = await _supabase.from('users').upsert(userToRow(u), { onConflict: 'id' });
-    if (error) console.error('upsertUser:', error);
+    if (error) { console.error('upsertUser:', error); window.DB_CACHE.users = null; }
 }
 
 async function deleteUserById(id) {
+    if (window.DB_CACHE.users) {
+        window.DB_CACHE.users = window.DB_CACHE.users.filter(x => x.id !== id);
+    }
     const { error } = await _supabase.from('users').delete().eq('id', id);
-    if (error) console.error('deleteUserById:', error);
+    if (error) { console.error('deleteUserById:', error); window.DB_CACHE.users = null; }
 }
