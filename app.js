@@ -259,7 +259,12 @@ async function showView(viewId, title, category) {
 
   if (viewId === 'dashboard') await renderDashboard();
   if (viewId === 'pipeline') await renderPipeline(category);
-  if (viewId === 'projects') await renderProjectsTable(category);
+  if (viewId === 'projects') {
+    if ($('#filter-project-category')) $('#filter-project-category').value = category || '';
+    if ($('#filter-project-stage')) $('#filter-project-stage').value = '';
+    if ($('#filter-project-client')) $('#filter-project-client').value = '';
+    await renderProjectsTable(category);
+  }
   if (viewId === 'gastos-global') await renderGastosGlobal(category);
   if (viewId === 'gastos-review') await renderGastosReview();
   if (viewId === 'cobranza') await renderCobranza();
@@ -673,11 +678,14 @@ function onDragEnd(e) { e.currentTarget.classList.remove('dragging'); }
 // ── PROJECTS TABLE ────────────────────────────────────────────
 async function renderProjectsTable(category, filter = '') {
   const [allProjects, allTasks] = await Promise.all([getProjects(), getTareas()]);
-  let projects = allProjects.filter(p => p.category === category);
 
   // Aplicar nuevos filtros
+  const catFilter = $('#filter-project-category')?.value || '';
   const stageFilter = $('#filter-project-stage')?.value;
   const clientFilter = $('#filter-project-client')?.value;
+
+  let projects = allProjects;
+  if (catFilter) projects = projects.filter(p => p.category === catFilter);
   if (stageFilter) projects = projects.filter(p => p.stage === stageFilter);
   if (clientFilter) projects = projects.filter(p => p.client === clientFilter);
 
@@ -686,13 +694,20 @@ async function renderProjectsTable(category, filter = '') {
     projects = projects.filter(p => p.name.toLowerCase().includes(q) || p.client.toLowerCase().includes(q));
   }
 
-  // Populate options dynamically based on all Projects (ignoring current filter)
-  const allCatProjects = allProjects.filter(p => p.category === category);
+  // Populate options dynamically based on all Projects (ignoring current stage/client filter)
+  const allCatProjects = catFilter ? allProjects.filter(p => p.category === catFilter) : allProjects;
 
   const stageSelect = $('#filter-project-stage');
   if (stageSelect) {
     const currentStage = stageSelect.value;
-    const stages = STAGES[category] || STAGES.legal;
+    let stages = [];
+    if (catFilter) {
+      stages = STAGES[catFilter] || STAGES.legal;
+    } else {
+      const map = new Map();
+      [...STAGES.legal, ...STAGES.inmobiliario].forEach(s => map.set(s.id, s));
+      stages = Array.from(map.values());
+    }
     stageSelect.innerHTML = '<option value="">Todas las etapas</option>' +
       stages.map(s => `<option value="${s.id}">${s.label}</option>`).join('');
     stageSelect.value = currentStage;
@@ -3173,6 +3188,7 @@ async function init() {
   // Project search & filters
   const updateProjectsFilter = () => renderProjectsTable(APP.currentCategory, $('#project-search')?.value || '');
   $('#project-search')?.addEventListener('input', updateProjectsFilter);
+  $('#filter-project-category')?.addEventListener('change', updateProjectsFilter);
   $('#filter-project-stage')?.addEventListener('change', updateProjectsFilter);
   $('#filter-project-client')?.addEventListener('change', updateProjectsFilter);
 
