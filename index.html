@@ -383,7 +383,15 @@
         <div class="card">
           <div class="card-header">
             <h2 class="card-title">Proyectos</h2>
-            <input type="text" class="search-input" id="project-search" placeholder="Buscar proyectos…" />
+            <div style="display:flex;gap:8px;align-items:center;">
+              <select class="filter-select" id="filter-project-stage">
+                <option value="">Todas las etapas</option>
+              </select>
+              <select class="filter-select" id="filter-project-client">
+                <option value="">Todos los clientes</option>
+              </select>
+              <input type="text" class="search-input" id="project-search" placeholder="Buscar proyectos…" />
+            </div>
           </div>
           <div class="card-body">
             <table class="data-table" id="projects-table">

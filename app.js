@@ -675,9 +675,36 @@ async function renderProjectsTable(category, filter = '') {
   const [allProjects, allTasks] = await Promise.all([getProjects(), getTareas()]);
   let projects = allProjects.filter(p => p.category === category);
 
+  // Aplicar nuevos filtros
+  const stageFilter = $('#filter-project-stage')?.value;
+  const clientFilter = $('#filter-project-client')?.value;
+  if (stageFilter) projects = projects.filter(p => p.stage === stageFilter);
+  if (clientFilter) projects = projects.filter(p => p.client === clientFilter);
+
   if (filter) {
     const q = filter.toLowerCase();
     projects = projects.filter(p => p.name.toLowerCase().includes(q) || p.client.toLowerCase().includes(q));
+  }
+
+  // Populate options dynamically based on all Projects (ignoring current filter)
+  const allCatProjects = allProjects.filter(p => p.category === category);
+
+  const stageSelect = $('#filter-project-stage');
+  if (stageSelect) {
+    const currentStage = stageSelect.value;
+    const stages = STAGES[category] || STAGES.legal;
+    stageSelect.innerHTML = '<option value="">Todas las etapas</option>' +
+      stages.map(s => `<option value="${s.id}">${s.label}</option>`).join('');
+    stageSelect.value = currentStage;
+  }
+
+  const clientSelect = $('#filter-project-client');
+  if (clientSelect) {
+    const currentClient = clientSelect.value;
+    const uniqueClients = [...new Set(allCatProjects.map(p => p.client))].filter(Boolean).sort();
+    clientSelect.innerHTML = '<option value="">Todos los clientes</option>' +
+      uniqueClients.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
+    clientSelect.value = currentClient;
   }
 
   const tbody = $('#projects-table-body');
@@ -3143,8 +3170,11 @@ async function init() {
   });
   $('#btn-remove-receipt')?.addEventListener('click', () => { APP.receiptDataUrl = null; resetReceiptUI(); });
 
-  // Project search
-  $('#project-search')?.addEventListener('input', (e) => renderProjectsTable(APP.currentCategory, e.target.value));
+  // Project search & filters
+  const updateProjectsFilter = () => renderProjectsTable(APP.currentCategory, $('#project-search')?.value || '');
+  $('#project-search')?.addEventListener('input', updateProjectsFilter);
+  $('#filter-project-stage')?.addEventListener('change', updateProjectsFilter);
+  $('#filter-project-client')?.addEventListener('change', updateProjectsFilter);
 
   // Admin — User modal
   $('#btn-add-user').addEventListener('click', () => openUserModal());
