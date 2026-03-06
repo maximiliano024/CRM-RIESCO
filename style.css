@@ -713,6 +713,7 @@ select {
   user-select: none;
   position: relative;
   overflow: hidden;
+  flex-shrink: 0; /* Prevents cards from squeezing when multiple items are present */
 }
 
 .project-card::before {
@@ -747,8 +748,26 @@ select {
 .pc-name {
   font-size: 14px;
   font-weight: 600;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   color: var(--text-primary);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Subcategory pills in cards */
+.subcategory-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  background: var(--bg-surface);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  white-space: nowrap;
 }
 
 .pc-client {
