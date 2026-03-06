@@ -423,6 +423,18 @@ async function openProjectModal(projectId = null, defaultStage = null) {
   setTimeout(() => $('#input-name').focus(), 100);
 }
 
+async function openIdeaModal() {
+  // We reuse the project modal but force category and subcategory
+  APP.currentCategory = 'inmobiliario';
+  APP.currentSubcategory = 'ideas';
+  await openProjectModal(null, 'en-contacto');
+
+  // Optional: Hide category/subcategory fields if we want to simplify
+  $('#group-subcategory')?.classList.remove('hidden');
+  $('#input-category').value = 'inmobiliario';
+  $('#input-subcategory').value = 'ideas';
+}
+
 function closeProjectModal() {
   $('#modal-project').classList.add('hidden');
   APP.editingProjectId = null;
@@ -3239,6 +3251,7 @@ async function init() {
 
   // Ideas search
   $('#ideas-search')?.addEventListener('input', (e) => renderIdeasTable(e.target.value));
+  $('#btn-new-idea')?.addEventListener('click', openIdeaModal);
 
   // Admin — User modal
   $('#btn-add-user').addEventListener('click', () => openUserModal());
