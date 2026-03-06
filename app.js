@@ -253,6 +253,8 @@ async function showView(viewId, title, category) {
     $('#nav-inmo-tareas')?.classList.add('active');
   } else if (viewId === 'tareas' && category === 'legal') {
     $('#nav-legal-tareas')?.classList.add('active');
+  } else if (viewId === 'ideas' && category === 'inmobiliario') {
+    $('#nav-inmo-ideas')?.classList.add('active');
   } else if (viewId === 'project-detail') {
     // keep whichever was previously active
   }
@@ -271,6 +273,7 @@ async function showView(viewId, title, category) {
   if (viewId === 'clientes') await renderClientes();
   if (viewId === 'admin') await renderAdminPanel();
   if (viewId === 'tareas') await renderTareas(category);
+  if (viewId === 'ideas') await renderIdeasTable();
 }
 
 // ── SIDEBAR COLLAPSIBLE GROUPS ────────────────────────────────
@@ -761,6 +764,48 @@ async function renderProjectsTable(category, filter = '') {
       <td><span class="cat-badge ${p.category}">${cat.icon} ${cat.label}</span></td>
       <td><span class="stage-badge ${p.stage}">${s.label}</span></td>
       <td style="font-weight:600;color:var(--success)">${formatCLP(p.value)}</td>
+      <td>${formatDate(p.date)}</td>
+      <td><div class="td-actions">
+        <button class="btn btn-sm btn-secondary" onclick="openProjectDetail('${p.id}')">Ver</button>
+        ${canEdit ? `<button class="btn btn-sm btn-ghost" onclick="openProjectModal('${p.id}')">Editar</button>` : ''}
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── IDEAS TABLE ───────────────────────────────────────────────
+async function renderIdeasTable(filter = '') {
+  const [allProjects, allTasks] = await Promise.all([getProjects(), getTareas()]);
+
+  // Filter by Inmobiliario AND Ideas subcategory
+  let projects = allProjects.filter(p => p.category === 'inmobiliario' && p.subcategory === 'ideas');
+
+  if (filter) {
+    const q = filter.toLowerCase();
+    projects = projects.filter(p => p.name.toLowerCase().includes(q) || p.client.toLowerCase().includes(q));
+  }
+
+  const tbody = $('#ideas-table-body');
+  const empty = $('#ideas-empty');
+
+  if (projects.length === 0) {
+    tbody.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+
+  const user = getCurrentUser();
+  const canEdit = user?.role === 'admin' || user?.role === 'normal';
+
+  tbody.innerHTML = projects.map(p => {
+    const s = getStageInfo(p.stage, p.category);
+    return `<tr>
+      <td style="font-weight:600;color:var(--text-primary);cursor:pointer" onclick="openProjectDetail('${p.id}')">
+        ${escHtml(p.name)}
+      </td>
+      <td>${escHtml(p.client)}</td>
+      <td><span class="stage-badge ${p.stage}">${s.label}</span></td>
       <td>${formatDate(p.date)}</td>
       <td><div class="td-actions">
         <button class="btn btn-sm btn-secondary" onclick="openProjectDetail('${p.id}')">Ver</button>
@@ -3191,6 +3236,9 @@ async function init() {
   $('#filter-project-category')?.addEventListener('change', updateProjectsFilter);
   $('#filter-project-stage')?.addEventListener('change', updateProjectsFilter);
   $('#filter-project-client')?.addEventListener('change', updateProjectsFilter);
+
+  // Ideas search
+  $('#ideas-search')?.addEventListener('input', (e) => renderIdeasTable(e.target.value));
 
   // Admin — User modal
   $('#btn-add-user').addEventListener('click', () => openUserModal());

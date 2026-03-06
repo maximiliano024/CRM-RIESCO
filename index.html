@@ -137,6 +137,13 @@
               </svg>
               <span>Tareas</span>
             </a>
+            <a href="#" class="nav-item nav-sub" data-view="ideas" data-category="inmobiliario" id="nav-inmo-ideas">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path
+                  d="M9.663 17h4.674M12 3v1m6.364 1.636l-.707.707M21 12h-1m-1.636 6.364l-.707-.707M12 21v-1m-6.364-1.636l.707-.707M3 12h1m1.636-6.364l.707.707M12 7a5 5 0 015 5 5 5 0 01-5 5 5 5 0 01-5-5 5 5 0 015-5z" />
+              </svg>
+              <span>Ideas</span>
+            </a>
           </div>
         </div>
 
@@ -418,6 +425,39 @@
                 <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
               </svg>
               <p>No hay proyectos en esta categoría.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── VIEW: IDEAS ── -->
+      <section class="view hidden" id="view-ideas">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Banco de Ideas</h2>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input type="text" class="search-input" id="ideas-search" placeholder="Buscar ideas…" />
+            </div>
+          </div>
+          <div class="card-body">
+            <table class="data-table" id="ideas-table">
+              <thead>
+                <tr>
+                  <th>Idea</th>
+                  <th>Cliente</th>
+                  <th>Etapa</th>
+                  <th>Fecha</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="ideas-table-body"></tbody>
+            </table>
+            <div class="empty-state hidden" id="ideas-empty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path
+                  d="M9.663 17h4.674M12 3v1m6.364 1.636l-.707.707M21 12h-1m-1.636 6.364l-.707-.707M12 21v-1m-6.364-1.636l.707-.707M3 12h1m1.636-6.364l.707.707M12 7a5 5 0 015 5 5 5 0 01-5 5 5 5 0 01-5-5 5 5 0 015-5z" />
+              </svg>
+              <p>No hay ideas registradas aún.</p>
             </div>
           </div>
         </div>
