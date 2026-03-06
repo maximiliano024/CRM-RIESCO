@@ -423,16 +423,84 @@ async function openProjectModal(projectId = null, defaultStage = null) {
   setTimeout(() => $('#input-name').focus(), 100);
 }
 
-async function openIdeaModal() {
-  // We reuse the project modal but force category and subcategory
-  APP.currentCategory = 'inmobiliario';
-  APP.currentSubcategory = 'ideas';
-  await openProjectModal(null, 'en-contacto');
+async function openIdeaModal(id = null) {
+  const modal = $('#modal-idea');
+  const title = $('#modal-idea-title');
+  const inputTitle = $('#idea-input-title');
+  const inputCategory = $('#idea-input-category');
+  const inputContact = $('#idea-input-contact');
+  const inputDescription = $('#idea-input-description');
 
-  // Optional: Hide category/subcategory fields if we want to simplify
-  $('#group-subcategory')?.classList.remove('hidden');
-  $('#input-category').value = 'inmobiliario';
-  $('#input-subcategory').value = 'ideas';
+  APP.editingIdeaId = id;
+
+  if (id) {
+    title.textContent = 'Editar Idea';
+    const ideas = await getIdeas();
+    const idea = ideas.find(x => x.id === id);
+    if (idea) {
+      inputTitle.value = idea.title;
+      inputCategory.value = idea.category || 'inmobiliario';
+      inputContact.value = idea.contact || '';
+      inputDescription.value = idea.description || '';
+    }
+  } else {
+    title.textContent = 'Nueva Idea';
+    inputTitle.value = '';
+    inputCategory.value = 'inmobiliario';
+    inputContact.value = '';
+    inputDescription.value = '';
+  }
+
+  modal.classList.remove('hidden');
+  setTimeout(() => inputTitle.focus(), 100);
+}
+
+function closeIdeaModal() {
+  $('#modal-idea').classList.add('hidden');
+  APP.editingIdeaId = null;
+}
+
+async function saveIdea() {
+  const title = $('#idea-input-title').value.trim();
+  const category = $('#idea-input-category').value;
+  const contact = $('#idea-input-contact').value.trim();
+  const description = $('#idea-input-description').value.trim();
+
+  if (!title) {
+    showToast('El título es obligatorio', 'error');
+    return;
+  }
+
+  const idea = {
+    id: APP.editingIdeaId || crypto.randomUUID(),
+    title,
+    category,
+    contact,
+    description,
+    createdAt: new Date().toISOString()
+  };
+
+  showToast('Guardando idea...');
+  const res = await upsertIdea(idea);
+  if (res === true) {
+    showToast('Idea guardada correctamente');
+    closeIdeaModal();
+    if (APP.currentView === 'ideas') renderIdeasTable($('#ideas-search')?.value || '');
+  } else {
+    showToast('Error al guardar idea', 'error');
+  }
+}
+
+async function deleteIdea(id) {
+  if (!confirm('¿Estás seguro de eliminar esta idea?')) return;
+  showToast('Eliminando...');
+  const res = await deleteIdeaById(id);
+  if (res) {
+    showToast('Idea eliminada');
+    renderIdeasTable($('#ideas-search')?.value || '');
+  } else {
+    showToast('Error al eliminar', 'error');
+  }
 }
 
 function closeProjectModal() {
@@ -787,20 +855,21 @@ async function renderProjectsTable(category, filter = '') {
 
 // ── IDEAS TABLE ───────────────────────────────────────────────
 async function renderIdeasTable(filter = '') {
-  const [allProjects, allTasks] = await Promise.all([getProjects(), getTareas()]);
-
-  // Filter by Inmobiliario AND Ideas subcategory
-  let projects = allProjects.filter(p => p.category === 'inmobiliario' && p.subcategory === 'ideas');
+  const ideas = await getIdeas();
+  let filtered = [...ideas];
 
   if (filter) {
     const q = filter.toLowerCase();
-    projects = projects.filter(p => p.name.toLowerCase().includes(q) || p.client.toLowerCase().includes(q));
+    filtered = filtered.filter(i =>
+      i.title.toLowerCase().includes(q) ||
+      (i.contact && i.contact.toLowerCase().includes(q))
+    );
   }
 
   const tbody = $('#ideas-table-body');
   const empty = $('#ideas-empty');
 
-  if (projects.length === 0) {
+  if (filtered.length === 0) {
     tbody.innerHTML = '';
     empty.classList.remove('hidden');
     return;
@@ -810,18 +879,19 @@ async function renderIdeasTable(filter = '') {
   const user = getCurrentUser();
   const canEdit = user?.role === 'admin' || user?.role === 'normal';
 
-  tbody.innerHTML = projects.map(p => {
-    const s = getStageInfo(p.stage, p.category);
+  tbody.innerHTML = filtered.map(i => {
     return `<tr>
-      <td style="font-weight:600;color:var(--text-primary);cursor:pointer" onclick="openProjectDetail('${p.id}')">
-        ${escHtml(p.name)}
+      <td style="font-weight:600;color:var(--text-primary)">
+        ${escHtml(i.title)}
       </td>
-      <td>${escHtml(p.client)}</td>
-      <td><span class="stage-badge ${p.stage}">${s.label}</span></td>
-      <td>${formatDate(p.date)}</td>
+      <td>${escHtml(i.contact || 'N/A')}</td>
+      <td><span class="cat-badge ${i.category}">${i.category === 'inmobiliario' ? '🏢 Inmobiliario' : i.category === 'legal' ? '⚖️ Legal' : '💡 Idea'}</span></td>
+      <td>${formatDate(i.createdAt)}</td>
       <td><div class="td-actions">
-        <button class="btn btn-sm btn-secondary" onclick="openProjectDetail('${p.id}')">Ver</button>
-        ${canEdit ? `<button class="btn btn-sm btn-ghost" onclick="openProjectModal('${p.id}')">Editar</button>` : ''}
+        ${canEdit ? `
+          <button class="btn btn-sm btn-ghost" onclick="openIdeaModal('${i.id}')">Editar</button>
+          <button class="btn btn-sm btn-ghost btn-delete" onclick="deleteIdea('${i.id}')">Eliminar</button>
+        ` : ''}
       </div></td>
     </tr>`;
   }).join('');
@@ -3249,9 +3319,13 @@ async function init() {
   $('#filter-project-stage')?.addEventListener('change', updateProjectsFilter);
   $('#filter-project-client')?.addEventListener('change', updateProjectsFilter);
 
-  // Ideas search
+  // Ideas search & modal
   $('#ideas-search')?.addEventListener('input', (e) => renderIdeasTable(e.target.value));
-  $('#btn-new-idea')?.addEventListener('click', openIdeaModal);
+  $('#btn-new-idea')?.addEventListener('click', () => openIdeaModal());
+  $('#modal-idea-close')?.addEventListener('click', closeIdeaModal);
+  $('#modal-idea-cancel')?.addEventListener('click', closeIdeaModal);
+  $('#modal-idea-save')?.addEventListener('click', saveIdea);
+  $('#modal-idea')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeIdeaModal(); });
 
   // Admin — User modal
   $('#btn-add-user').addEventListener('click', () => openUserModal());

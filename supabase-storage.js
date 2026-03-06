@@ -8,7 +8,7 @@
 // ── CACHE LAYER ──────────────────────────────────────────────
 window.DB_CACHE = {
     projects: null, clients: null, gastos: null, cobros: null,
-    comments: null, files: null, tareas: null, users: null
+    comments: null, files: null, tareas: null, users: null, ideas: null
 };
 
 window.invalidateCache = (key) => {
@@ -129,6 +129,21 @@ function userToRow(u) {
         password: u.password, role: u.role,
         access: u.access || ['legal', 'inmobiliario'],
     };
+}
+function rowToIdea(r) {
+    return {
+        id: r.id, title: r.title, category: r.category,
+        contact: r.contact, description: r.description,
+        createdAt: r.created_at,
+    };
+}
+function ideaToRow(i) {
+    const row = {
+        id: i.id, title: i.title, category: i.category || null,
+        contact: i.contact || null, description: i.description || null,
+    };
+    if (i.createdAt) row.created_at = i.createdAt;
+    return row;
 }
 
 
@@ -484,4 +499,35 @@ async function deleteUserById(id) {
     }
     const { error } = await _supabase.from('users').delete().eq('id', id);
     if (error) { console.error('deleteUserById:', error); window.DB_CACHE.users = null; }
+}
+
+// ── IDEAS ─────────────────────────────────────────────────────
+async function getIdeas(force = false) {
+    if (!force && window.DB_CACHE.ideas) return window.DB_CACHE.ideas;
+    try {
+        const { data, error } = await fetchWithRetry(() => _supabase.from('ideas').select('*').order('created_at', { ascending: false }));
+        if (error) { console.error('getIdeas:', error); return []; }
+        window.DB_CACHE.ideas = (data || []).map(rowToIdea);
+        return window.DB_CACHE.ideas;
+    } catch (err) { console.error('getIdeas failed after retries:', err); return []; }
+}
+
+async function upsertIdea(i) {
+    if (window.DB_CACHE.ideas) {
+        const idx = window.DB_CACHE.ideas.findIndex(x => x.id === i.id);
+        if (idx !== -1) window.DB_CACHE.ideas[idx] = { ...window.DB_CACHE.ideas[idx], ...i };
+        else window.DB_CACHE.ideas.unshift(i);
+    }
+    const { error } = await _supabase.from('ideas').upsert(ideaToRow(i), { onConflict: 'id' });
+    if (error) { console.error('upsertIdea:', error); window.DB_CACHE.ideas = null; return error; }
+    return true;
+}
+
+async function deleteIdeaById(id) {
+    if (window.DB_CACHE.ideas) {
+        window.DB_CACHE.ideas = window.DB_CACHE.ideas.filter(x => x.id !== id);
+    }
+    const { error } = await _supabase.from('ideas').delete().eq('id', id);
+    if (error) { console.error('deleteIdeaById:', error); window.DB_CACHE.ideas = null; return false; }
+    return true;
 }
