@@ -257,6 +257,8 @@ async function showView(viewId, title, category) {
     $('#nav-inmo-ideas')?.classList.add('active');
   } else if (viewId === 'finished-projects') {
     $('#nav-finished-projects')?.classList.add('active');
+  } else if (viewId === 'finished-projects') {
+    $('#nav-finished-projects')?.classList.add('active');
   } else if (viewId === 'project-detail') {
     // keep whichever was previously active
   }
