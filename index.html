@@ -1171,6 +1171,41 @@
     </div>
   </div>
 
+  <!-- MODAL: ENVIAR A COBRO -->
+  <div class="modal-overlay hidden" id="modal-send-billing">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Terminar y Enviar a Cobro</h2>
+        <button class="modal-close" id="modal-send-billing-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label class="form-label">Proyecto</label>
+            <input type="text" class="form-input" id="billing-project-name" disabled />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fecha de Término</label>
+            <input type="date" class="form-input" id="billing-end-date" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Monto a Cobrar ($)</label>
+            <input type="number" class="form-input" id="billing-amount" />
+          </div>
+          <div class="form-group full-width">
+            <label class="form-label">Enviado a pagar por</label>
+            <input type="text" class="form-input" id="billing-sent-by" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="modal-send-billing-cancel">Cancelar</button>
+        <button class="btn btn-success" id="modal-send-billing-confirm"
+          style="background-color:var(--success);color:white">Enviar a Cobranza</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: IDEA -->
   <div class="modal-overlay hidden" id="modal-idea">
     <div class="modal">

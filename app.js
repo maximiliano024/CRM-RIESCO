@@ -282,6 +282,67 @@ function toggleNavGroup(groupId) {
   if (g) g.classList.toggle('collapsed');
 }
 
+// ── BILLING MODAL ──────────────────────────────────────────────
+async function openSendBillingModal(projectId) {
+  const projects = await getProjects();
+  const p = projects.find(x => x.id === projectId);
+  if (!p) return;
+
+  APP.billingProjectId = projectId;
+  $('#billing-project-name').value = p.name;
+  $('#billing-end-date').value = today();
+  $('#billing-amount').value = p.value || 0;
+  $('#billing-sent-by').value = APP.currentUser?.name || '';
+
+  $('#modal-send-billing').classList.remove('hidden');
+}
+
+function closeSendBillingModal() {
+  $('#modal-send-billing').classList.add('hidden');
+  APP.billingProjectId = null;
+}
+
+async function saveBillingForm() {
+  const amount = parseFloat($('#billing-amount').value) || 0;
+  const concept = `Cobro final: ${$('#billing-project-name').value}`;
+  const dueDate = $('#billing-end-date').value;
+  const sentBy = $('#billing-sent-by').value;
+
+  const cobro = {
+    id: uuidv4(),
+    projectId: APP.billingProjectId,
+    concept: concept,
+    amount: amount,
+    dueDate: dueDate,
+    status: 'pendiente',
+    notes: `Enviado a pagar por: ${sentBy}`
+  };
+
+  try {
+    await upsertCobro(cobro);
+
+    // Create notification for admins
+    await createNotification({
+      id: uuidv4(),
+      title: 'Nuevo cobro enviado',
+      message: `El proyecto "${$('#billing-project-name').value}" ha sido enviado a cobro por ${sentBy} por un monto de ${formatCLP(amount)}.`
+    });
+
+    showToast('Proyecto enviado a cobranza exitosamente', 'success');
+    closeSendBillingModal();
+
+    // Refresh views if necessary
+    if ($('#view-cobranza') && !$('#view-cobranza').classList.contains('hidden')) {
+      const cobros = await getCobros(true);
+      const projects = await getProjects();
+      renderCobranzaCobros(cobros, projects);
+    }
+  } catch (err) {
+    showToast('Error al procesar el cobro', 'error');
+    console.error(err);
+  }
+}
+
 // ── PROJECT MODAL ─────────────────────────────────────────────
 function resetCoverUI() {
   const ph = $('#cover-placeholder');
@@ -3471,6 +3532,12 @@ async function init() {
     APP.calendarDate.setMonth(APP.calendarDate.getMonth() + 1);
     renderProjectTareas(APP.currentProjectId);
   });
+
+  // Billing Modal
+  $('#modal-send-billing-close')?.addEventListener('click', closeSendBillingModal);
+  $('#modal-send-billing-cancel')?.addEventListener('click', closeSendBillingModal);
+  $('#modal-send-billing-confirm')?.addEventListener('click', saveBillingForm);
+  $('#modal-send-billing')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeSendBillingModal(); });
 }
 
 

@@ -531,3 +531,26 @@ async function deleteIdeaById(id) {
     if (error) { console.error('deleteIdeaById:', error); window.DB_CACHE.ideas = null; return false; }
     return true;
 }
+// ── NOTIFICATIONS ──────────────────────────────────────────────
+function rowToNotification(r) {
+    return {
+        id: r.id, title: r.title, message: r.message,
+        userId: r.user_id || null, read: r.read || false,
+        createdAt: r.created_at,
+    };
+}
+function notificationToRow(n) {
+    return {
+        id: n.id, title: n.title, message: n.message,
+        user_id: n.userId || null, read: n.read || false,
+    };
+}
+async function createNotification(n) {
+    const { error } = await _supabase.from('notifications').insert(notificationToRow(n));
+    if (error) console.error('createNotification:', error);
+}
+async function getNotifications() {
+    const { data, error } = await _supabase.from('notifications').select('*').order('created_at', { ascending: false });
+    if (error) { console.error('getNotifications:', error); return []; }
+    return (data || []).map(rowToNotification);
+}
