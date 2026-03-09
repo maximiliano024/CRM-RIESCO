@@ -357,18 +357,22 @@ async function saveBillingForm() {
       message: `El proyecto "${$('#billing-project-name').value}" ha sido enviado a cobro por ${sentBy} por un monto de ${formatCLP(amount)}.`
     });
 
+    // Mark project as finished
+    const projId = APP.billingProjectId;
     showToast('Proyecto enviado a cobranza exitosamente', 'success');
     closeSendBillingModal();
 
-    // Mark project as finished
-    const projects = await getProjects();
-    const p = projects.find(x => x.id === APP.billingProjectId);
-    if (p) {
-      p.stage = 'terminado';
-      await upsertProject(p);
+    if (projId) {
+      const projects = await getProjects();
+      const p = projects.find(x => x.id === projId);
+      if (p) {
+        p.stage = 'terminado';
+        await upsertProject(p);
+      }
     }
 
     updateSidebarBadges(); // Update the badge count
+    refreshCurrentView(); // Refresh the UI
 
     // Refresh views if necessary
     if ($('#view-cobranza') && !$('#view-cobranza').classList.contains('hidden')) {
@@ -673,6 +677,7 @@ function refreshCurrentView() {
   else if (v === 'pipeline') renderPipeline(c);
   else if (v === 'projects') renderProjectsTable(c);
   else if (v === 'project-detail') openProjectDetail(APP.currentProjectId);
+  else if (v === 'finished-projects') renderFinishedProjects();
   else if (v === 'admin') renderAdminPanel();
 }
 
