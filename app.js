@@ -299,13 +299,16 @@ async function openSendBillingModal(projectId) {
 
 // ── SIDEBAR BADGES ─────────────────────────────────────────────
 async function updateSidebarBadges() {
-  const [projects, cobros] = await Promise.all([getProjects(), getCobros()]);
+  const cobros = await getCobros();
 
-  // Projects in "cierre" stage that don't have a linked cobro yet
-  const projectsInCierre = projects.filter(p => p.stage === 'cierre');
-  const binnedProjectIds = new Set(cobros.map(c => c.projectId));
+  // Unique project IDs that have at least one unpaid cobro
+  const unpaidProjectIds = new Set(
+    cobros
+      .filter(c => c.status !== 'pagado')
+      .map(c => c.projectId)
+  );
 
-  const pendingBillingCount = projectsInCierre.filter(p => !binnedProjectIds.has(p.id)).length;
+  const pendingBillingCount = unpaidProjectIds.size;
 
   const badge = $('#billing-badge');
   if (badge) {
@@ -2946,6 +2949,7 @@ async function marcarCobroPagado(id) {
   await upsertCobro(c);
   showToast('Cobro marcado como pagado ✓', 'success');
   renderCobranza();
+  updateSidebarBadges();
 }
 
 async function openCobroModal(id = null) {
@@ -2996,6 +3000,7 @@ async function saveCobro() {
   showToast(APP.editingCobroId ? 'Cobro actualizado' : 'Cobro registrado', 'success');
   closeCobroModal();
   renderCobranza();
+  updateSidebarBadges();
 }
 
 async function deleteCobro(id) {
@@ -3003,6 +3008,7 @@ async function deleteCobro(id) {
   await deleteCobroById(id);
   showToast('Cobro eliminado', 'info');
   renderCobranza();
+  updateSidebarBadges();
 }
 
 async function renderTaskCalendar(category, projectId = null) {
