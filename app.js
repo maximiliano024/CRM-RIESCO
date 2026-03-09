@@ -3538,6 +3538,10 @@ async function init() {
   $('#modal-send-billing-cancel')?.addEventListener('click', closeSendBillingModal);
   $('#modal-send-billing-confirm')?.addEventListener('click', saveBillingForm);
   $('#modal-send-billing')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeSendBillingModal(); });
+
+  $('#btn-send-billing-detail')?.addEventListener('click', () => {
+    if (APP.currentProjectId) openSendBillingModal(APP.currentProjectId);
+  });
 }
 
 
