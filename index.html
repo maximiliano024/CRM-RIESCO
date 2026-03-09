@@ -3,8 +3,9 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Plataforma de gestión de Proyectos — Riesco & Asociados</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM Riesco & Asociados</title>
+  <link rel="icon" type="image/png" href="favicon.png">
   <meta name="description" content="Plataforma de gestión de Proyectos — Riesco y Asociados" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -123,6 +124,10 @@
               </svg>
               <span>Pipeline</span>
             </a>
+            <a href="#" class="nav-item nav-sub" data-view="projects-list" data-category="inmobiliario">Listado
+              Inmobiliario</a>
+            <a href="#" class="nav-item nav-sub" data-view="finished-projects" id="nav-finished-projects">Proyectos
+              Terminados</a>
             <a href="#" class="nav-item nav-sub" data-view="projects" data-category="inmobiliario"
               id="nav-inmo-projects">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -967,7 +972,39 @@
               </div>
               <div class="calendar-grid" id="task-calendar-grid"></div>
             </div>
+          </div>
+      </section>
 
+      <!-- ── VIEW: FINISHED PROJECTS ── -->
+      <section id="view-finished-projects" class="view hidden">
+        <div class="view-header">
+          <div class="header-main">
+            <h1 class="view-title">Proyectos Terminados</h1>
+            <p class="view-subtitle">Histórico de proyectos finalizados y enviados a cobranza</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-container">
+            <table class="table" id="finished-projects-table">
+              <thead>
+                <tr>
+                  <th>Proyecto</th>
+                  <th>Categoría</th>
+                  <th>Cliente</th>
+                  <th>Fecha Cierre</th>
+                  <th>Monto</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="finished-projects-body">
+                <!-- Rendered via JS -->
+              </tbody>
+            </table>
+            <div id="finished-projects-empty" class="empty-state hidden">
+              <div class="empty-icon">📁</div>
+              <p>No hay proyectos terminados aún.</p>
+            </div>
           </div>
         </div>
       </section>

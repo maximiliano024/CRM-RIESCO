@@ -255,6 +255,8 @@ async function showView(viewId, title, category) {
     $('#nav-legal-tareas')?.classList.add('active');
   } else if (viewId === 'ideas' && category === 'inmobiliario') {
     $('#nav-inmo-ideas')?.classList.add('active');
+  } else if (viewId === 'finished-projects') {
+    $('#nav-finished-projects')?.classList.add('active');
   } else if (viewId === 'project-detail') {
     // keep whichever was previously active
   }
@@ -274,6 +276,7 @@ async function showView(viewId, title, category) {
   if (viewId === 'admin') await renderAdminPanel();
   if (viewId === 'tareas') await renderTareas(category);
   if (viewId === 'ideas') await renderIdeasTable();
+  if (viewId === 'finished-projects') await renderFinishedProjects();
 }
 
 // ── SIDEBAR COLLAPSIBLE GROUPS ────────────────────────────────
@@ -354,6 +357,15 @@ async function saveBillingForm() {
 
     showToast('Proyecto enviado a cobranza exitosamente', 'success');
     closeSendBillingModal();
+
+    // Mark project as finished
+    const projects = await getProjects();
+    const p = projects.find(x => x.id === APP.billingProjectId);
+    if (p) {
+      p.stage = 'terminado';
+      await upsertProject(p);
+    }
+
     updateSidebarBadges(); // Update the badge count
 
     // Refresh views if necessary
@@ -745,7 +757,7 @@ function renderPipelineChart(projects) {
 
 async function renderPipeline(category) {
   const [allProjects, allTasks] = await Promise.all([getProjects(), getTareas()]);
-  let projects = allProjects.filter(p => p.category === category);
+  let projects = allProjects.filter(p => p.category === category && p.stage !== 'terminado');
   const user = getCurrentUser();
   const isReadOnly = !(user?.role === 'admin' || user?.role === 'normal');
   const stages = STAGES[category] || STAGES.legal;
@@ -849,6 +861,8 @@ function onDragEnd(e) { e.currentTarget.classList.remove('dragging'); }
 // ── PROJECTS TABLE ────────────────────────────────────────────
 async function renderProjectsTable(category, filter = '') {
   const [allProjects, allTasks] = await Promise.all([getProjects(), getTareas()]);
+  const projectsAtivo = allProjects.filter(p => p.stage !== 'terminado');
+  // ... (the rest of filtering logic below should use projectsAtivo)
 
   // Aplicar nuevos filtros
   const catFilter = $('#filter-project-category')?.value || '';
@@ -867,7 +881,7 @@ async function renderProjectsTable(category, filter = '') {
     }
   }
 
-  let projects = allProjects;
+  let projects = projectsAtivo;
   if (catFilter) projects = projects.filter(p => p.category === catFilter);
   if (catFilter === 'inmobiliario' && subcatFilter) {
     projects = projects.filter(p => p.subcategory === subcatFilter);
@@ -881,7 +895,7 @@ async function renderProjectsTable(category, filter = '') {
   }
 
   // Populate options dynamically based on all Projects (ignoring current stage/client filter)
-  const allCatProjects = catFilter ? allProjects.filter(p => p.category === catFilter) : allProjects;
+  const allCatProjects = catFilter ? projectsAtivo.filter(p => p.category === catFilter) : projectsAtivo;
 
   const stageSelect = $('#filter-project-stage');
   if (stageSelect) {
@@ -996,6 +1010,38 @@ async function renderIdeasTable(filter = '') {
           <button class="btn btn-sm btn-ghost btn-delete" onclick="deleteIdea('${i.id}')">Eliminar</button>
         ` : ''}
       </div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── FINISHED PROJECTS ──────────────────────────────────────────
+async function renderFinishedProjects() {
+  const allProjects = await getProjects();
+  const finished = allProjects.filter(p => p.stage === 'terminado');
+
+  const tbody = $('#finished-projects-body');
+  const empty = $('#finished-projects-empty');
+
+  if (finished.length === 0) {
+    tbody.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+
+  tbody.innerHTML = finished.map(p => {
+    const cat = CATEGORIES[p.category] || { label: p.category, icon: '' };
+    return `<tr>
+      <td style="font-weight:600;color:var(--text-primary);cursor:pointer" onclick="openProjectDetail('${p.id}')">
+        ${escHtml(p.name)}
+      </td>
+      <td>${cat.icon} ${cat.label}</td>
+      <td>${escHtml(p.client)}</td>
+      <td>${p.updatedAt ? formatDate(p.updatedAt.split('T')[0]) : '—'}</td>
+      <td><strong>${formatCLP(p.value)}</strong></td>
+      <td>
+        <button class="btn btn-sm btn-ghost" onclick="openProjectDetail('${p.id}')">Ver Detalle</button>
+      </td>
     </tr>`;
   }).join('');
 }
