@@ -285,17 +285,17 @@ function toggleNavGroup(groupId) {
 // ── PROJECT MODAL ─────────────────────────────────────────────
 function resetCoverUI() {
   const ph = $('#cover-placeholder');
-  const pv = $('#cover-preview');
+  const pv = $('#cover-preview-container');
   if (ph) ph.classList.remove('hidden');
   if (pv) pv.classList.add('hidden');
-  const ri = $('#cover-img'); if (ri) ri.src = '';
+  const ri = $('#cover-preview-img'); if (ri) ri.src = '';
 }
 
 function showCoverPreview(dataUrl) {
   const ph = $('#cover-placeholder');
   if (ph) ph.classList.add('hidden');
-  const ri = $('#cover-img'); if (ri) ri.src = dataUrl;
-  const pv = $('#cover-preview');
+  const ri = $('#cover-preview-img'); if (ri) ri.src = dataUrl;
+  const pv = $('#cover-preview-container');
   if (pv) pv.classList.remove('hidden');
 }
 
@@ -316,11 +316,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const uploadArea = $('#cover-upload-area');
   const btnRemoveCover = $('#btn-remove-cover');
 
-  if (btnSelectCover && coverInput) {
-    btnSelectCover.onclick = () => coverInput.click();
+  if (uploadArea && coverInput) {
+    // Click opens file selector
+    uploadArea.onclick = () => coverInput.click();
     coverInput.onchange = (e) => handleCoverUpload(e.target.files[0]);
-  }
-  if (uploadArea) {
+
     uploadArea.ondragover = (e) => { e.preventDefault(); uploadArea.style.borderColor = 'var(--accent)'; };
     uploadArea.ondragleave = () => { uploadArea.style.borderColor = 'var(--border)'; };
     uploadArea.ondrop = (e) => {
