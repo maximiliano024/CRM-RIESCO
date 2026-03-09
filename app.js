@@ -297,6 +297,27 @@ async function openSendBillingModal(projectId) {
   $('#modal-send-billing').classList.remove('hidden');
 }
 
+// ── SIDEBAR BADGES ─────────────────────────────────────────────
+async function updateSidebarBadges() {
+  const [projects, cobros] = await Promise.all([getProjects(), getCobros()]);
+
+  // Projects in "cierre" stage that don't have a linked cobro yet
+  const projectsInCierre = projects.filter(p => p.stage === 'cierre');
+  const binnedProjectIds = new Set(cobros.map(c => c.projectId));
+
+  const pendingBillingCount = projectsInCierre.filter(p => !binnedProjectIds.has(p.id)).length;
+
+  const badge = $('#billing-badge');
+  if (badge) {
+    if (pendingBillingCount > 0) {
+      badge.textContent = pendingBillingCount > 99 ? '99+' : pendingBillingCount;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
+}
+
 function closeSendBillingModal() {
   $('#modal-send-billing').classList.add('hidden');
   APP.billingProjectId = null;
@@ -330,6 +351,7 @@ async function saveBillingForm() {
 
     showToast('Proyecto enviado a cobranza exitosamente', 'success');
     closeSendBillingModal();
+    updateSidebarBadges(); // Update the badge count
 
     // Refresh views if necessary
     if ($('#view-cobranza') && !$('#view-cobranza').classList.contains('hidden')) {
@@ -683,6 +705,7 @@ async function renderDashboard() {
   }
 
   renderPipelineChart(projects.filter(p => accessible.includes(p.category)));
+  updateSidebarBadges();
 }
 
 function renderPipelineChart(projects) {
@@ -773,6 +796,7 @@ async function renderPipeline(category) {
           updateProjectStage(id, s.id).then(success => {
             if (success) {
               showToast(`Movido a "${s.label}"`, 'success');
+              updateSidebarBadges(); // Update badge if moved to/from cierre
             } else {
               p.stage = oldStage;
               renderPipeline(category);
