@@ -99,7 +99,7 @@ function rowToComment(r) {
 function commentToRow(c) {
     return {
         id: c.id, project_id: c.projectId, author: c.author || null,
-        text: c.text,
+        text: c.text, created_at: c.createdAt || null
     };
 }
 function rowToFile(r) {

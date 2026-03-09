@@ -1202,27 +1202,36 @@ function closeLocationModal() {
 async function renderComments(projectId) {
   const all = await getComments();
   const comments = all.filter(c => c.projectId === projectId)
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    .sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateA - dateB;
+    });
+
   const list = $('#comments-list');
   const empty = $('#comments-empty');
+  if (!list || !empty) return;
 
   if (comments.length === 0) {
-    list.innerHTML = ''; list.appendChild(empty); empty.classList.remove('hidden');
+    list.innerHTML = '';
+    list.appendChild(empty);
+    empty.classList.remove('hidden');
   } else {
     empty.classList.add('hidden');
-    list.innerHTML = comments.map(c => `<div class="comment-item" id="comment-${c.id}">
-      <div class="comment-avatar">${(c.author || 'RY').slice(0, 2).toUpperCase()}</div>
-      <div class="comment-body">
-        <div class="comment-meta">
-          <span class="comment-author">${escHtml(c.author || 'Riesco & Asoc.')}</span>
-          <span style="display:flex;align-items:center;gap:8px">
-            <span class="comment-date">${formatDatetime(c.createdAt)}</span>
-            <button class="comment-delete" onclick="deleteComment('${c.id}')" title="Eliminar">×</button>
-          </span>
+    list.innerHTML = comments.map(c => `
+      <div class="comment-item" id="comment-${c.id}">
+        <div class="comment-avatar">${(c.author || 'RY').slice(0, 2).toUpperCase()}</div>
+        <div class="comment-body">
+          <div class="comment-meta">
+            <span class="comment-author">${escHtml(c.author || 'Riesco & Asoc.')}</span>
+            <span style="display:flex;align-items:center;gap:8px">
+              <span class="comment-date">${formatDatetime(c.createdAt)}</span>
+              <button class="comment-delete" onclick="deleteComment('${c.id}')" title="Eliminar">×</button>
+            </span>
+          </div>
+          <div class="comment-text">${escHtml(c.text)}</div>
         </div>
-        <div class="comment-text">${escHtml(c.text)}</div>
-      </div>
-    </div>`).join('');
+      </div>`).join('');
   }
 }
 
