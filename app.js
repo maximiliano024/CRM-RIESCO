@@ -309,7 +309,7 @@ async function saveBillingForm() {
   const sentBy = $('#billing-sent-by').value;
 
   const cobro = {
-    id: uuidv4(),
+    id: crypto.randomUUID(),
     projectId: APP.billingProjectId,
     concept: concept,
     amount: amount,
@@ -323,7 +323,7 @@ async function saveBillingForm() {
 
     // Create notification for admins
     await createNotification({
-      id: uuidv4(),
+      id: crypto.randomUUID(),
       title: 'Nuevo cobro enviado',
       message: `El proyecto "${$('#billing-project-name').value}" ha sido enviado a cobro por ${sentBy} por un monto de ${formatCLP(amount)}.`
     });
