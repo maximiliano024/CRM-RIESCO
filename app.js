@@ -764,11 +764,26 @@ async function renderProjectsTable(category, filter = '') {
 
   // Aplicar nuevos filtros
   const catFilter = $('#filter-project-category')?.value || '';
+  const subcatFilter = $('#filter-project-subcategory')?.value || '';
   const stageFilter = $('#filter-project-stage')?.value;
   const clientFilter = $('#filter-project-client')?.value;
 
+  // Show/hide subcategory filter based on category
+  const subcatSelect = $('#filter-project-subcategory');
+  if (subcatSelect) {
+    if (catFilter === 'inmobiliario') {
+      subcatSelect.classList.remove('hidden');
+    } else {
+      subcatSelect.classList.add('hidden');
+      subcatSelect.value = ''; // Reset if hidden
+    }
+  }
+
   let projects = allProjects;
   if (catFilter) projects = projects.filter(p => p.category === catFilter);
+  if (catFilter === 'inmobiliario' && subcatFilter) {
+    projects = projects.filter(p => p.subcategory === subcatFilter);
+  }
   if (stageFilter) projects = projects.filter(p => p.stage === stageFilter);
   if (clientFilter) projects = projects.filter(p => p.client === clientFilter);
 
@@ -3316,6 +3331,7 @@ async function init() {
   const updateProjectsFilter = () => renderProjectsTable(APP.currentCategory, $('#project-search')?.value || '');
   $('#project-search')?.addEventListener('input', updateProjectsFilter);
   $('#filter-project-category')?.addEventListener('change', updateProjectsFilter);
+  $('#filter-project-subcategory')?.addEventListener('change', updateProjectsFilter);
   $('#filter-project-stage')?.addEventListener('change', updateProjectsFilter);
   $('#filter-project-client')?.addEventListener('change', updateProjectsFilter);
 
