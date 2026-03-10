@@ -136,6 +136,22 @@ async function seedAdmin() {
   });
 }
 
+// Seed INTERNO project for office expenses
+async function seedInternoProject() {
+  const projects = await getProjects();
+  if (projects.find(p => p.id === 'INTERNO')) return;
+
+  await upsertProject({
+    id: 'INTERNO',
+    name: 'INTERNO (Gasto Oficina)',
+    category: 'oficina',
+    stage: 'cierre', // Etapa genérica para que no moleste en pipelines
+    description: 'Proyecto genérico para gastos internos de la oficina.',
+    createdAt: new Date().toISOString()
+  });
+  console.log('Proyecto INTERNO creado.');
+}
+
 async function doLoginMicrosoft() {
   const err = $('#login-error');
   if (err) err.classList.add('hidden');
@@ -1713,7 +1729,7 @@ async function renderGastosGlobal(category) {
 
   // Load data
   const allProjects = await getProjects();
-  const projects = category ? allProjects.filter(p => p.category === category) : allProjects;
+  const projects = category ? allProjects.filter(p => p.category === category || p.id === 'INTERNO') : allProjects;
   const projectMap = {};
   projects.forEach(p => { projectMap[p.id] = p.name; });
 
@@ -2135,7 +2151,13 @@ async function openGastoModal(gastoId = null) {
   const projSel = $('#gasto-project-id');
   const category = APP.currentCategory;
   const allProjects = await getProjects();
-  const contextProjects = allProjects.filter(p => category ? p.category === category : true);
+
+  // Incluir internos + los de la categoría actual
+  const contextProjects = allProjects.filter(p => {
+    if (p.id === 'INTERNO') return true;
+    return category ? p.category === category : true;
+  });
+
   projSel.innerHTML = contextProjects
     .map(p => `<option value="${p.id}">${escHtml(p.name)}</option>`).join('');
 
@@ -3425,6 +3447,7 @@ async function init() {
 
   // 3. Optional Seed (Background)
   seedAdmin().catch(err => console.error('Admin seed failed:', err));
+  seedInternoProject().catch(err => console.error('Interno seed failed:', err));
 
   // 4. Other Listeners (with safety)
 
