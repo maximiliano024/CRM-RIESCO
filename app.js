@@ -2158,6 +2158,13 @@ async function openGastoModal(gastoId = null) {
     return category ? p.category === category : true;
   });
 
+  // Asegurar que INTERNO aparezca primero
+  contextProjects.sort((a, b) => {
+    if (a.id === 'INTERNO') return -1;
+    if (b.id === 'INTERNO') return 1;
+    return a.name.localeCompare(b.name);
+  });
+
   projSel.innerHTML = contextProjects
     .map(p => `<option value="${p.id}">${escHtml(p.name)}</option>`).join('');
 
