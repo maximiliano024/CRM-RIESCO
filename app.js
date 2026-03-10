@@ -1201,16 +1201,22 @@ function closeLocationModal() {
 
 // ── COMMENTS ─────────────────────────────────────────────────
 async function renderComments(projectId) {
-  console.group('%c 💬 Comentarios Debug ', 'background: #222; color: #bada55');
-  const tid = String(projectId || '').trim().toLowerCase();
-  console.log('Buscando para ID:', `"${tid}"`);
+  console.group('%c 🚀 renderComments CACHE BYPASS ', 'background: #e67e22; color: #fff');
+  const targetId = String(projectId || '').trim().toLowerCase();
+  console.log('Target ID:', `"${targetId}"`);
 
-  const all = await getComments();
-  console.log('Total en DB/Cache:', all.length);
+  // Siempre pedir datos frescos para descartar problemas de cache local
+  const all = await getComments(true);
+  console.log('Total comments fetched from DB:', all.length);
 
   const comments = all.filter(c => {
     const cid = String(c.projectId || c.project_id || '').trim().toLowerCase();
-    const match = (cid === tid && tid !== '' && tid !== 'undefined' && tid !== 'null');
+    const match = (cid === targetId && targetId !== '' && targetId !== 'undefined' && targetId !== 'null');
+
+    // Log individual de comparación para detectar intrusos
+    if (match || all.indexOf(c) < 10) {
+      console.log(`[Filtrando] DB_ID: "${cid}" vs TARGET: "${targetId}" -> Match: ${match}`);
+    }
     return match;
   }).sort((a, b) => {
     const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -1218,11 +1224,7 @@ async function renderComments(projectId) {
     return dateA - dateB;
   });
 
-  console.log('Comentarios encontrados:', comments.length);
-  if (comments.length === 0 && all.length > 0) {
-    console.warn('Alerta: Hay comentarios en DB pero ninguno coincide con este proyecto.');
-    console.log('Ejemplo de ID en DB:', `"${String(all[0].projectId || all[0].project_id || '').trim().toLowerCase()}"`);
-  }
+  console.log('Comments result count:', comments.length);
   console.groupEnd();
 
   const list = $('#comments-list');

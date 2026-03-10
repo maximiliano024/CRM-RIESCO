@@ -356,8 +356,11 @@ async function deleteCobroById(id) {
 
 // ── COMMENTS ─────────────────────────────────────────────────
 async function getComments(force = false) {
-    console.log('getComments call - force:', force, 'cache exists:', !!window.DB_CACHE.comments);
-    if (!force && window.DB_CACHE.comments) return window.DB_CACHE.comments;
+    if (!force && window.DB_CACHE.comments) {
+        console.log('getComments: Returning cached comments');
+        return window.DB_CACHE.comments;
+    }
+    console.log('getComments: Fetching fresh from DB (force=' + force + ')');
     try {
         const { data, error } = await fetchWithRetry(() => _supabase.from('comments').select('*').order('created_at', { ascending: true }));
         if (error) { console.error('getComments:', error); return []; }
