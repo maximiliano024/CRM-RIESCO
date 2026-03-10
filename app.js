@@ -169,8 +169,9 @@ async function doLogout() {
 
 // ── BOOT ──────────────────────────────────────────────────────
 function bootApp(user) {
-  $('#login-screen').classList.add('hidden');
-  $('#app-shell').classList.remove('hidden');
+  if (!user) return;
+  $('#login-screen')?.classList.add('hidden');
+  $('#app-shell')?.classList.remove('hidden');
 
   // Apply read-only class if visualizador
   if (user.role === 'visualizador') {
@@ -185,11 +186,12 @@ function bootApp(user) {
   }
 
   // Hide category groups user has no access to
-  if (!user.access.includes('legal')) {
+  const access = user.access || [];
+  if (!access.includes('legal')) {
     const g = $('#nav-group-legal');
     if (g) g.style.display = 'none';
   }
-  if (!user.access.includes('inmobiliario')) {
+  if (!access.includes('inmobiliario')) {
     const g = $('#nav-group-inmobiliario');
     if (g) g.style.display = 'none';
   }
@@ -199,9 +201,10 @@ function bootApp(user) {
   if (user.role === 'admin') roleName = 'Administrador';
   else if (user.role === 'normal') roleName = 'Normal';
 
-  $('#sidebar-user-name').textContent = escHtml(user.name);
-  $('#sidebar-user-role').textContent = roleName;
-  $('#sidebar-avatar').textContent = user.name.slice(0, 2).toUpperCase();
+  const userName = user.name || 'Usuario';
+  if ($('#sidebar-user-name')) $('#sidebar-user-name').textContent = escHtml(userName);
+  if ($('#sidebar-user-role')) $('#sidebar-user-role').textContent = roleName;
+  if ($('#sidebar-avatar')) $('#sidebar-avatar').textContent = userName.slice(0, 2).toUpperCase();
 
   showView('dashboard', 'Dashboard', null);
 }
@@ -3363,56 +3366,67 @@ async function reopenTarea(id) {
 
 // ── INIT ──────────────────────────────────────────────────────
 async function init() {
-  await seedAdmin();
+  console.log('Initializing application components...');
 
-  // Escuchar sesión en tiempo real de Supabase (Microsoft Graph)
-  _supabase.auth.onAuthStateChange(async (event, session) => {
-    if (session && session.user) {
-      // Evitar doble boot: onAuthStateChange puede dispararse con INITIAL_SESSION + SIGNED_IN
-      if (APP.booted) return;
-
-      const email = session.user.email;
-      const name = session.user.user_metadata?.full_name || email.split('@')[0];
-
-      let users = await getUsers();
-      let dbUser = users.find(u => u.username.toLowerCase() === email.toLowerCase());
-
-      // Auto-registrar usuario si no existe pero que haya pasado Azure
-      if (!dbUser) {
-        dbUser = {
-          id: uid(),
-          username: email,
-          name: name,
-          password: 'ms-oauth-user',
-          role: 'normal',
-          access: ['legal', 'inmobiliario']
-        };
-        await upsertUser(dbUser);
-      }
-
-      // Persistir provider_token (Microsoft Graph) si existe en la sesión
-      if (session.provider_token) {
-        APP.msToken = session.provider_token; // Cache en memoria
-        localStorage.setItem('ms_graph_token', session.provider_token);
-      }
-
-      APP.booted = true;
-      setCurrentUser(dbUser);
-      bootApp(dbUser);
-    } else {
-      // No hay sesión
-      APP.booted = false;
-      clearSession();
-      const shell = $('#app-shell');
-      const login = $('#login-screen');
-      if (shell) shell.classList.add('hidden');
-      if (login) login.classList.remove('hidden');
-    }
-  });
-
-  // Login
+  // 1. Attach login listener IMMEDIATELY (Highest Priority)
   const btnMs = $('#btn-login-microsoft');
-  if (btnMs) btnMs.addEventListener('click', doLoginMicrosoft);
+  if (btnMs) {
+    btnMs.addEventListener('click', doLoginMicrosoft);
+    console.log('Login listener attached.');
+  }
+
+  // 2. Auth State Change Listener
+  try {
+    _supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state change:', event);
+      if (session && session.user) {
+        if (APP.booted) return;
+
+        const email = session.user.email;
+        const name = session.user.user_metadata?.full_name || email.split('@')[0];
+
+        try {
+          let users = await getUsers();
+          let dbUser = users.find(u => u.username.toLowerCase() === email.toLowerCase());
+
+          if (!dbUser) {
+            dbUser = {
+              id: uid(),
+              username: email,
+              name: name,
+              password: 'ms-oauth-user',
+              role: 'normal',
+              access: ['legal', 'inmobiliario']
+            };
+            await upsertUser(dbUser);
+          }
+
+          if (session.provider_token) {
+            APP.msToken = session.provider_token;
+            localStorage.setItem('ms_graph_token', session.provider_token);
+          }
+
+          APP.booted = true;
+          setCurrentUser(dbUser);
+          bootApp(dbUser);
+        } catch (err) {
+          console.error('Error during user boot:', err);
+        }
+      } else {
+        APP.booted = false;
+        clearSession();
+        $('#app-shell')?.classList.add('hidden');
+        $('#login-screen')?.classList.remove('hidden');
+      }
+    });
+  } catch (err) {
+    console.error('Error initializing auth listener:', err);
+  }
+
+  // 3. Optional Seed (Background)
+  seedAdmin().catch(err => console.error('Admin seed failed:', err));
+
+  // 4. Other Listeners (with safety)
 
   // Logout
   $('#btn-logout')?.addEventListener('click', doLogout);
