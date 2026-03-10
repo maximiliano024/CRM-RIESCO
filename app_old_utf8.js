@@ -1,12 +1,12 @@
-/* ============================================================
-   RIESCO & ASOCIADOS — CRM APP  v2
+﻿/* ============================================================
+   RIESCO & ASOCIADOS ÔÇö CRM APP  v2
    Auth + Categories + Admin Panel
    ============================================================ */
 'use strict';
 
 console.log('CRM Riesco y Asociados - app.js v1.4.6 loaded (Speed Update)');
 
-// ── STATE ────────────────────────────────────────────────────
+// ÔöÇÔöÇ STATE ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 const APP = {
   currentView: 'dashboard',
   currentCategory: null,
@@ -27,44 +27,43 @@ const APP = {
   chart: null,
   taskViewMode: 'table', // 'table' | 'calendar'
   calendarDate: new Date(),
-  booted: false,
-  lastCommentsRequestId: null,
+  booted: false,  // evita doble bootApp() por onAuthStateChange doble disparo
 };
 
 
 const STAGES = {
   legal: [
     { id: 'en-contacto', label: 'En Contacto', color: '#3b82f6' },
-    { id: 'evaluacion', label: 'Evaluación', color: '#8b5cf6' },
-    { id: 'en-negociacion', label: 'En Negociación', color: '#f59e0b' },
+    { id: 'evaluacion', label: 'Evaluaci├│n', color: '#8b5cf6' },
+    { id: 'en-negociacion', label: 'En Negociaci├│n', color: '#f59e0b' },
     { id: 'cierre', label: 'Cierre', color: '#10b981' },
   ],
   inmobiliario: [
     { id: 'en-contacto', label: 'En Contacto', color: '#3b82f6' },
-    { id: 'evaluacion', label: 'Evaluación', color: '#8b5cf6' },
-    { id: 'en-negociacion', label: 'En Negociación', color: '#f59e0b' },
+    { id: 'evaluacion', label: 'Evaluaci├│n', color: '#8b5cf6' },
+    { id: 'en-negociacion', label: 'En Negociaci├│n', color: '#f59e0b' },
     { id: 'cierre', label: 'Cierre', color: '#10b981' },
   ]
 };
 
 const CATEGORIES = {
-  legal: { label: 'Legal', icon: '⚖️', color: '#ea580c' },
-  inmobiliario: { label: 'Inmobiliario', icon: '🏢', color: '#0891b2' },
+  legal: { label: 'Legal', icon: 'ÔÜû´©Å', color: '#ea580c' },
+  inmobiliario: { label: 'Inmobiliario', icon: '­ƒÅó', color: '#0891b2' },
 };
 
-// ── STORAGE: funciones async en supabase-storage.js ─────────
+// ÔöÇÔöÇ STORAGE: funciones async en supabase-storage.js ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 
-// ── UTILITIES ────────────────────────────────────────────────
+// ÔöÇÔöÇ UTILITIES ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
 
 function formatCLP(n) {
-  if (!n) return '—';
+  if (!n) return 'ÔÇö';
   return `$${Number(n).toLocaleString('es-CL')}`;
 }
 function formatDate(d) {
-  if (!d) return '—';
+  if (!d) return 'ÔÇö';
   try { const [y, m, day] = d.split('-'); return `${day}/${m}/${y}`; } catch { return d; }
 }
 function formatSize(bytes) {
@@ -75,8 +74,8 @@ function formatSize(bytes) {
 }
 function getFileIcon(name) {
   const ext = (name || '').split('.').pop().toLowerCase();
-  const m = { pdf: { icon: '📄', bg: 'rgba(239,68,68,0.15)' }, doc: { icon: '📝', bg: 'rgba(59,130,246,0.15)' }, docx: { icon: '📝', bg: 'rgba(59,130,246,0.15)' }, xls: { icon: '📊', bg: 'rgba(16,185,129,0.15)' }, xlsx: { icon: '📊', bg: 'rgba(16,185,129,0.15)' }, csv: { icon: '📊', bg: 'rgba(16,185,129,0.15)' }, jpg: { icon: '🖼️', bg: 'rgba(245,158,11,0.15)' }, jpeg: { icon: '🖼️', bg: 'rgba(245,158,11,0.15)' }, png: { icon: '🖼️', bg: 'rgba(245,158,11,0.15)' }, ppt: { icon: '📽️', bg: 'rgba(245,158,11,0.15)' }, pptx: { icon: '📽️', bg: 'rgba(245,158,11,0.15)' }, zip: { icon: '🗜️', bg: 'rgba(139,92,246,0.15)' }, rar: { icon: '🗜️', bg: 'rgba(139,92,246,0.15)' } };
-  return m[ext] || { icon: '📎', bg: 'rgba(156,163,175,0.15)' };
+  const m = { pdf: { icon: '­ƒôä', bg: 'rgba(239,68,68,0.15)' }, doc: { icon: '­ƒôØ', bg: 'rgba(59,130,246,0.15)' }, docx: { icon: '­ƒôØ', bg: 'rgba(59,130,246,0.15)' }, xls: { icon: '­ƒôè', bg: 'rgba(16,185,129,0.15)' }, xlsx: { icon: '­ƒôè', bg: 'rgba(16,185,129,0.15)' }, csv: { icon: '­ƒôè', bg: 'rgba(16,185,129,0.15)' }, jpg: { icon: '­ƒû╝´©Å', bg: 'rgba(245,158,11,0.15)' }, jpeg: { icon: '­ƒû╝´©Å', bg: 'rgba(245,158,11,0.15)' }, png: { icon: '­ƒû╝´©Å', bg: 'rgba(245,158,11,0.15)' }, ppt: { icon: '­ƒô¢´©Å', bg: 'rgba(245,158,11,0.15)' }, pptx: { icon: '­ƒô¢´©Å', bg: 'rgba(245,158,11,0.15)' }, zip: { icon: '­ƒù£´©Å', bg: 'rgba(139,92,246,0.15)' }, rar: { icon: '­ƒù£´©Å', bg: 'rgba(139,92,246,0.15)' } };
+  return m[ext] || { icon: '­ƒôÄ', bg: 'rgba(156,163,175,0.15)' };
 }
 function getStageInfo(id, category = 'legal') {
   const list = STAGES[category] || STAGES.legal;
@@ -93,7 +92,7 @@ function formatDatetime(iso) {
   } catch { return iso; }
 }
 
-// ── TOAST ────────────────────────────────────────────────────
+// ÔöÇÔöÇ TOAST ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 function showToast(msg, type = 'info') {
   const t = $('#toast');
   t.textContent = msg;
@@ -103,13 +102,13 @@ function showToast(msg, type = 'info') {
   t._timer = setTimeout(() => t.classList.add('hidden'), 3200);
 }
 
-// ── PASSWORD HASHING (SHA-256 via Web Crypto) ─────────────────
+// ÔöÇÔöÇ PASSWORD HASHING (SHA-256 via Web Crypto) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 async function hashPassword(plain) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(plain));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// ── AUTH ──────────────────────────────────────────────────────
+// ÔöÇÔöÇ AUTH ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 function getCurrentUser() {
   try { return JSON.parse(sessionStorage.getItem('crm_session')); } catch { return null; }
 }
@@ -167,7 +166,7 @@ async function doLogout() {
   location.reload();
 }
 
-// ── BOOT ──────────────────────────────────────────────────────
+// ÔöÇÔöÇ BOOT ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 function bootApp(user) {
   $('#login-screen').classList.add('hidden');
   $('#app-shell').classList.remove('hidden');
@@ -206,7 +205,7 @@ function bootApp(user) {
   showView('dashboard', 'Dashboard', null);
 }
 
-// ── ROUTING ──────────────────────────────────────────────────
+// ÔöÇÔöÇ ROUTING ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 async function showView(viewId, title, category) {
   $$('.view').forEach(v => v.classList.add('hidden'));
   const view = $(`#view-${viewId}`);
@@ -282,13 +281,13 @@ async function showView(viewId, title, category) {
   if (viewId === 'finished-projects') await renderFinishedProjects();
 }
 
-// ── SIDEBAR COLLAPSIBLE GROUPS ────────────────────────────────
+// ÔöÇÔöÇ SIDEBAR COLLAPSIBLE GROUPS ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 function toggleNavGroup(groupId) {
   const g = document.querySelector(`[data-group="${groupId}"]`)?.closest('.nav-group');
   if (g) g.classList.toggle('collapsed');
 }
 
-// ── BILLING MODAL ──────────────────────────────────────────────
+// ÔöÇÔöÇ BILLING MODAL ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 async function openSendBillingModal(projectId) {
   const projects = await getProjects();
   const p = projects.find(x => x.id === projectId);
@@ -303,7 +302,7 @@ async function openSendBillingModal(projectId) {
   $('#modal-send-billing').classList.remove('hidden');
 }
 
-// ── SIDEBAR BADGES ─────────────────────────────────────────────
+// ÔöÇÔöÇ SIDEBAR BADGES ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 async function updateSidebarBadges() {
   const cobros = await getCobros();
 
@@ -387,7 +386,7 @@ async function saveBillingForm() {
   }
 }
 
-// ── PROJECT MODAL ─────────────────────────────────────────────
+// ÔöÇÔöÇ PROJECT MODAL ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 function resetCoverUI() {
   const ph = $('#cover-placeholder');
   const pv = $('#cover-preview-container');
@@ -450,12 +449,12 @@ async function openProjectModal(projectId = null, defaultStage = null) {
   // Populate client dropdown
   const [clients, users] = await Promise.all([getClients(), getUsers()]);
   const sel = $('#input-client');
-  sel.innerHTML = '<option value="">— Seleccionar empresa —</option>' +
+  sel.innerHTML = '<option value="">ÔÇö Seleccionar empresa ÔÇö</option>' +
     clients.map(c => `<option value="${escHtml(c.name)}">${escHtml(c.name)}</option>`).join('');
 
   // Populate responsible dropdown with registered users
   const respSel = $('#input-responsible');
-  respSel.innerHTML = '<option value="">— Seleccionar responsable —</option>' +
+  respSel.innerHTML = '<option value="">ÔÇö Seleccionar responsable ÔÇö</option>' +
     users.map(u => `<option value="${escHtml(u.name)}">${escHtml(u.name)}</option>`).join('');
 
   if (projectId) {
@@ -572,7 +571,7 @@ async function saveIdea() {
   const description = $('#idea-input-description').value.trim();
 
   if (!title) {
-    showToast('El título es obligatorio', 'error');
+    showToast('El t├¡tulo es obligatorio', 'error');
     return;
   }
 
@@ -597,7 +596,7 @@ async function saveIdea() {
 }
 
 async function deleteIdea(id) {
-  if (!confirm('¿Estás seguro de eliminar esta idea?')) return;
+  if (!confirm('┬┐Est├ís seguro de eliminar esta idea?')) return;
   showToast('Eliminando...');
   const res = await deleteIdeaById(id);
   if (res) {
@@ -622,7 +621,7 @@ async function saveProject() {
 
   const category = $('#input-category').value;
   const subcategory = $('#input-subcategory').value;
-  if (category === 'inmobiliario' && !subcategory) { showToast('Selecciona un área inmobiliaria', 'error'); return; }
+  if (category === 'inmobiliario' && !subcategory) { showToast('Selecciona un ├írea inmobiliaria', 'error'); return; }
 
   const data = {
     name, client,
@@ -665,7 +664,7 @@ async function saveProject() {
 }
 
 async function deleteProject(id) {
-  if (!confirm('¿Eliminar este proyecto? Esta acción no se puede deshacer.')) return;
+  if (!confirm('┬┐Eliminar este proyecto? Esta acci├│n no se puede deshacer.')) return;
   await deleteProjectById(id);
   showToast('Proyecto eliminado', 'info');
   showView(APP.currentCategory ? 'projects' : 'dashboard', APP.currentCategory ? 'Proyectos' : 'Dashboard', APP.currentCategory);
@@ -682,7 +681,7 @@ function refreshCurrentView() {
   else if (v === 'admin') renderAdminPanel();
 }
 
-// ── DASHBOARD ─────────────────────────────────────────────────
+// ÔöÇÔöÇ DASHBOARD ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 async function renderDashboard() {
   const projects = await getProjects();
   const user = getCurrentUser();
@@ -709,7 +708,7 @@ async function renderDashboard() {
     .slice(0, 8);
 
   if (recent.length === 0) {
-    list.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><p>No hay proyectos aún.</p></div>`;
+    list.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><p>No hay proyectos a├║n.</p></div>`;
   } else {
     list.innerHTML = recent.map(p => {
       const stage = getStageInfo(p.stage);
@@ -743,7 +742,7 @@ function renderPipelineChart(projects) {
 
   if (total === 0) {
     const container = ctx.parentNode;
-    container.innerHTML = `<canvas id="pipeline-chart"></canvas><div class="empty-state" style="position:absolute;inset:0;pointer-events:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:40px;height:40px;opacity:0.3"><circle cx="12" cy="12" r="10"/></svg><p>Sin datos aún</p></div>`;
+    container.innerHTML = `<canvas id="pipeline-chart"></canvas><div class="empty-state" style="position:absolute;inset:0;pointer-events:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:40px;height:40px;opacity:0.3"><circle cx="12" cy="12" r="10"/></svg><p>Sin datos a├║n</p></div>`;
     return;
   }
 
@@ -832,6 +831,7 @@ async function renderPipeline(category) {
   });
 }
 
+
 function buildProjectCard(p, color, allTasks = []) {
   const cat = CATEGORIES[p.category] || CATEGORIES.legal;
   const coverHtml = p.coverDataUrl ? `<div class="project-card-cover" style="background-image:url('${p.coverDataUrl}')"></div>` : '';
@@ -842,9 +842,9 @@ function buildProjectCard(p, color, allTasks = []) {
 
   let warningsHtml = '';
   if (projectTasks.length === 0) {
-    warningsHtml = `<div class="pc-warning pc-warning-empty">⚠️ Sin tareas asignadas</div>`;
+    warningsHtml = `<div class="pc-warning pc-warning-empty">ÔÜá´©Å Sin tareas asignadas</div>`;
   } else if (overdueTasks.length > 0) {
-    warningsHtml = `<div class="pc-warning pc-warning-overdue">🚨 ${overdueTasks.length} tarea(s) vencida(s)</div>`;
+    warningsHtml = `<div class="pc-warning pc-warning-overdue">­ƒÜ¿ ${overdueTasks.length} tarea(s) vencida(s)</div>`;
   }
 
   return `<div class="project-card" draggable="true" data-id="${p.id}" style="--stage-color:${color}"
@@ -854,9 +854,9 @@ function buildProjectCard(p, color, allTasks = []) {
     <div class="pc-name">${escHtml(p.name)}${p.subcategory ? `<span class="subcategory-badge">${escHtml(p.subcategory)}</span>` : ''}</div>
     ${warningsHtml}
     <div class="pc-client"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${escHtml(p.client)}</div>
-    ${p.description ? `<div style="font-size:12px;color:var(--text-muted);line-height:1.4;margin-bottom:6px">${escHtml(p.description.slice(0, 80))}${p.description.length > 80 ? '…' : ''}</div>` : ''}
+    ${p.description ? `<div style="font-size:12px;color:var(--text-muted);line-height:1.4;margin-bottom:6px">${escHtml(p.description.slice(0, 80))}${p.description.length > 80 ? 'ÔÇª' : ''}</div>` : ''}
     <div class="pc-footer">
-      <span class="pc-value">${p.value ? formatCLP(p.value) : '—'}</span>
+      <span class="pc-value">${p.value ? formatCLP(p.value) : 'ÔÇö'}</span>
       <span class="pc-date">${p.date ? formatDate(p.date) : ''}</span>
     </div>
   </div>`;
@@ -865,7 +865,7 @@ function buildProjectCard(p, color, allTasks = []) {
 function onDragStart(e, id) { e.dataTransfer.setData('projectId', id); e.currentTarget.classList.add('dragging'); }
 function onDragEnd(e) { e.currentTarget.classList.remove('dragging'); }
 
-// ── PROJECTS TABLE ────────────────────────────────────────────
+// ÔöÇÔöÇ PROJECTS TABLE ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 async function renderProjectsTable(category, filter = '') {
   const [allProjects, allTasks] = await Promise.all([getProjects(), getTareas()]);
   const projectsAtivo = allProjects.filter(p => p.stage !== 'terminado');
@@ -951,9 +951,9 @@ async function renderProjectsTable(category, filter = '') {
 
     let warningBadge = '';
     if (projectTasks.length === 0) {
-      warningBadge = `<span class="table-warning table-warning-empty" title="Sin tareas asignadas">⚠️ Sin tareas</span>`;
+      warningBadge = `<span class="table-warning table-warning-empty" title="Sin tareas asignadas">ÔÜá´©Å Sin tareas</span>`;
     } else if (overdueTasks.length > 0) {
-      warningBadge = `<span class="table-warning table-warning-overdue" title="${overdueTasks.length} tarea(s) vencida(s)">🚨 ${overdueTasks.length} vencida(s)</span>`;
+      warningBadge = `<span class="table-warning table-warning-overdue" title="${overdueTasks.length} tarea(s) vencida(s)">­ƒÜ¿ ${overdueTasks.length} vencida(s)</span>`;
     }
 
     return `<tr>
@@ -977,7 +977,7 @@ async function renderProjectsTable(category, filter = '') {
   }).join('');
 }
 
-// ── IDEAS TABLE ───────────────────────────────────────────────
+// ÔöÇÔöÇ IDEAS TABLE ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 async function renderIdeasTable(filter = '') {
   const ideas = await getIdeas();
   let filtered = [...ideas];
@@ -1009,7 +1009,7 @@ async function renderIdeasTable(filter = '') {
         ${escHtml(i.title)}
       </td>
       <td>${escHtml(i.contact || 'N/A')}</td>
-      <td><span class="cat-badge ${i.category}">${i.category === 'inmobiliario' ? '🏢 Inmobiliario' : i.category === 'legal' ? '⚖️ Legal' : '💡 Idea'}</span></td>
+      <td><span class="cat-badge ${i.category}">${i.category === 'inmobiliario' ? '­ƒÅó Inmobiliario' : i.category === 'legal' ? 'ÔÜû´©Å Legal' : '­ƒÆí Idea'}</span></td>
       <td>${formatDate(i.createdAt)}</td>
       <td><div class="td-actions">
         ${canEdit ? `
@@ -1021,7 +1021,7 @@ async function renderIdeasTable(filter = '') {
   }).join('');
 }
 
-// ── FINISHED PROJECTS ──────────────────────────────────────────
+// ÔöÇÔöÇ FINISHED PROJECTS ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 async function renderFinishedProjects() {
   const allProjects = await getProjects();
   const finished = allProjects.filter(p => p.stage === 'terminado');
@@ -1044,7 +1044,7 @@ async function renderFinishedProjects() {
       </td>
       <td>${cat.icon} ${cat.label}</td>
       <td>${escHtml(p.client)}</td>
-      <td>${p.updatedAt ? formatDate(p.updatedAt.split('T')[0]) : '—'}</td>
+      <td>${p.updatedAt ? formatDate(p.updatedAt.split('T')[0]) : 'ÔÇö'}</td>
       <td><strong>${formatCLP(p.value)}</strong></td>
       <td>
         <button class="btn btn-sm btn-ghost" onclick="openProjectDetail('${p.id}')">Ver Detalle</button>
@@ -1053,7 +1053,7 @@ async function renderFinishedProjects() {
   }).join('');
 }
 
-// ── PROJECT DETAIL ────────────────────────────────────────────
+// ÔöÇÔöÇ PROJECT DETAIL ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 async function openProjectDetail(id) {
   console.log('--- openProjectDetail --- ID:', id);
   const projects = await getProjects();
@@ -1063,7 +1063,7 @@ async function openProjectDetail(id) {
   // Check access
   const user = getCurrentUser();
   if (user?.access && !user.access.includes(p.category)) {
-    showToast('No tienes acceso a esta categoría', 'error');
+    showToast('No tienes acceso a esta categor├¡a', 'error');
     return;
   }
 
@@ -1095,18 +1095,18 @@ async function openProjectDetail(id) {
 
   $('#detail-project-name').textContent = p.name;
   $('#detail-project-client').textContent = p.client;
-  $('#detail-project-value').textContent = p.value ? `💰 ${formatCLP(p.value)}` : '';
-  $('#detail-project-date').textContent = p.date ? `📅 ${formatDate(p.date)}` : '';
+  $('#detail-project-value').textContent = p.value ? `­ƒÆ░ ${formatCLP(p.value)}` : '';
+  $('#detail-project-date').textContent = p.date ? `­ƒôà ${formatDate(p.date)}` : '';
 
   $('#detail-info-list').innerHTML = [
     { label: 'Cliente', value: p.client },
-    { label: 'Categoría', value: `${cat.icon} ${cat.label}` },
+    { label: 'Categor├¡a', value: `${cat.icon} ${cat.label}` },
     { label: 'Etapa', value: stage.label },
-    { label: 'Responsable', value: p.responsible || '—' },
-    { label: 'Fecha de inicio', value: p.date ? formatDate(p.date) : '—' },
-    { label: 'Valor', value: p.value ? formatCLP(p.value) : '—' },
-    { label: 'Dirección', value: p.address || '—' },
-    { label: 'Descripción', value: p.description || '—' },
+    { label: 'Responsable', value: p.responsible || 'ÔÇö' },
+    { label: 'Fecha de inicio', value: p.date ? formatDate(p.date) : 'ÔÇö' },
+    { label: 'Valor', value: p.value ? formatCLP(p.value) : 'ÔÇö' },
+    { label: 'Direcci├│n', value: p.address || 'ÔÇö' },
+    { label: 'Descripci├│n', value: p.description || 'ÔÇö' },
   ].map(i => `<div class="info-item"><span class="info-label">${i.label}</span><span class="info-value">${escHtml(String(i.value))}</span></div>`).join('');
 
   $('#tab-btn-tareas').style.display = p.category === 'inmobiliario' ? '' : 'none';
@@ -1121,7 +1121,7 @@ async function openProjectDetail(id) {
   }
 }
 
-// ── MAP ───────────────────────────────────────────────────────
+// ÔöÇÔöÇ MAP ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 function initProjectMap(project) {
   const el = document.getElementById('project-map');
   if (!el) return;
@@ -1131,7 +1131,7 @@ function initProjectMap(project) {
   const lng = project.lng || -70.6693;
 
   APP.map = L.map('project-map').setView([lat, lng], project.lat ? 15 : 5);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(APP.map);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '┬® OpenStreetMap' }).addTo(APP.map);
 
   if (project.lat) {
     L.marker([lat, lng]).addTo(APP.map)
@@ -1151,7 +1151,7 @@ async function openLocationModal() {
     const lat = p.lat || -33.4489;
     const lng = p.lng || -70.6693;
     APP.locationMap = L.map('location-map').setView([lat, lng], p.lat ? 15 : 6);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(APP.locationMap);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '┬® OpenStreetMap' }).addTo(APP.locationMap);
     if (p.lat) {
       APP.locationMapMarker = L.marker([lat, lng]).addTo(APP.locationMap);
       APP.tempLatLng = { lat, lng };
@@ -1170,18 +1170,18 @@ async function searchLocation() {
   try {
     const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`);
     const data = await res.json();
-    if (!data.length) { showToast('Dirección no encontrada', 'error'); return; }
+    if (!data.length) { showToast('Direcci├│n no encontrada', 'error'); return; }
     const { lat, lon } = data[0];
     APP.tempLatLng = { lat: parseFloat(lat), lng: parseFloat(lon) };
     APP.locationMap.setView([lat, lon], 16);
     if (APP.locationMapMarker) APP.locationMapMarker.setLatLng([lat, lon]);
     else APP.locationMapMarker = L.marker([lat, lon]).addTo(APP.locationMap);
-    showToast('Ubicación encontrada', 'success');
-  } catch { showToast('Error al buscar dirección', 'error'); }
+    showToast('Ubicaci├│n encontrada', 'success');
+  } catch { showToast('Error al buscar direcci├│n', 'error'); }
 }
 
 async function saveLocation() {
-  if (!APP.tempLatLng) { showToast('Selecciona una ubicación', 'error'); return; }
+  if (!APP.tempLatLng) { showToast('Selecciona una ubicaci├│n', 'error'); return; }
   const projects = await getProjects();
   const p = projects.find(p => p.id === APP.currentProjectId);
   if (!p) return;
@@ -1190,7 +1190,7 @@ async function saveLocation() {
   await upsertProject(p);
   closeLocationModal();
   initProjectMap(p);
-  showToast('Ubicación guardada', 'success');
+  showToast('Ubicaci├│n guardada', 'success');
 }
 
 function closeLocationModal() {
@@ -1199,63 +1199,58 @@ function closeLocationModal() {
   if (APP.locationMap) { APP.locationMap.remove(); APP.locationMap = null; APP.locationMapMarker = null; }
 }
 
-// ── COMMENTS ─────────────────────────────────────────────────
+// ÔöÇÔöÇ COMMENTS ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 async function renderComments(projectId) {
-  const requestId = uid();
-  APP.lastCommentsRequestId = requestId;
+  console.group('%c ­ƒÜÇ renderComments CACHE BYPASS ', 'background: #e67e22; color: #fff');
+  const targetId = String(projectId || '').trim().toLowerCase();
+  console.log('Target ID:', `"${targetId}"`);
+
+  // Siempre pedir datos frescos para descartar problemas de cache local
+  const all = await getComments(true);
+  console.log('Total comments fetched from DB:', all.length);
+
+  const comments = all.filter(c => {
+    const cid = String(c.projectId || c.project_id || '').trim().toLowerCase();
+    const match = (cid === targetId && targetId !== '' && targetId !== 'undefined' && targetId !== 'null');
+
+    // Log individual de comparaci├│n para detectar intrusos
+    if (match || all.indexOf(c) < 10) {
+      console.log(`[Filtrando] DB_ID: "${cid}" vs TARGET: "${targetId}" -> Match: ${match}`);
+    }
+    return match;
+  }).sort((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return dateA - dateB;
+  });
+
+  console.log('Comments result count:', comments.length);
+  console.groupEnd();
 
   const list = $('#comments-list');
-  if (list) list.innerHTML = '<div class="loading-spinner-small">...</div>';
+  const empty = $('#comments-empty');
+  if (!list || !empty) return;
 
-  console.group('%c 🚀 renderComments (Race Control) ', 'background: #e67e22; color: #fff');
-  const targetId = String(projectId || '').trim().toLowerCase();
-  console.log('Target ID:', `"${targetId}"`, 'Req ID:', requestId);
-
-  try {
-    const all = await getComments(true);
-
-    // Si esta ya no es la última petición, abortar silenciosamente
-    if (APP.lastCommentsRequestId !== requestId) {
-      console.warn('⚠️ Render cancelado: Petición obsoleta.');
-      console.groupEnd();
-      return;
-    }
-
-    const comments = all.filter(c => {
-      const cid = String(c.projectId || c.project_id || '').trim().toLowerCase();
-      return cid === targetId && targetId !== '' && targetId !== 'undefined' && targetId !== 'null';
-    }).sort((a, b) => {
-      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return dateA - dateB;
-    });
-
-    if (list) list.innerHTML = '';
-    const empty = $('#comments-empty');
-    if (empty) empty.classList.toggle('hidden', comments.length > 0);
-
-    if (comments.length === 0) {
-      console.log('No comments for this project.');
-    } else {
-      comments.forEach(c => {
-        const div = document.createElement('div');
-        div.className = 'comment-item';
-        div.innerHTML = `
-          <div class="comment-header">
+  if (comments.length === 0) {
+    list.innerHTML = '';
+    list.appendChild(empty);
+    empty.classList.remove('hidden');
+  } else {
+    empty.classList.add('hidden');
+    list.innerHTML = comments.map(c => `
+      <div class="comment-item" id="comment-${c.id}">
+        <div class="comment-avatar">${(c.author || 'RY').slice(0, 2).toUpperCase()}</div>
+        <div class="comment-body">
+          <div class="comment-meta">
             <span class="comment-author">${escHtml(c.author || 'Riesco & Asoc.')}</span>
-            <span class="comment-date">${formatDatetime(c.createdAt)}</span>
-            <button class="btn-delete-comment can-edit" onclick="deleteComment('${c.id}')" title="Eliminar">✕</button>
+            <span style="display:flex;align-items:center;gap:8px">
+              <span class="comment-date">${formatDatetime(c.createdAt)}</span>
+              <button class="comment-delete" onclick="deleteComment('${c.id}')" title="Eliminar">├ù</button>
+            </span>
           </div>
           <div class="comment-text">${escHtml(c.text)}</div>
-        `;
-        list.appendChild(div);
-      });
-    }
-  } catch (err) {
-    console.error('Error in renderComments:', err);
-    if (list) list.innerHTML = '<div class="error-state">Error al cargar comentarios</div>';
-  } finally {
-    console.groupEnd();
+        </div>
+      </div>`).join('');
   }
 }
 
@@ -1276,7 +1271,7 @@ async function deleteComment(id) {
   renderComments(APP.currentProjectId);
 }
 
-// ── TAREAS (PROJECT DETAIL) ──────────────────────────────────
+// ÔöÇÔöÇ TAREAS (PROJECT DETAIL) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 async function renderProjectTareas(projectId) {
   const mode = APP.taskViewMode || 'table';
   $('#project-tareas-table-container')?.classList.toggle('hidden', mode !== 'table');
@@ -1332,7 +1327,7 @@ async function renderProjectTareas(projectId) {
       <td>${formatDate(t.dueDate)}</td>
       <td>
         <div class="td-actions">
-          ${t.status !== 'completada' ? `<button class="btn btn-sm btn-ghost can-edit" onclick="completeProjectTarea('${t.id}')">✓ Completar</button>` : `<button class="btn btn-sm btn-ghost can-edit" onclick="reopenProjectTarea('${t.id}')">↻ Reabrir</button>`}
+          ${t.status !== 'completada' ? `<button class="btn btn-sm btn-ghost can-edit" onclick="completeProjectTarea('${t.id}')">Ô£ô Completar</button>` : `<button class="btn btn-sm btn-ghost can-edit" onclick="reopenProjectTarea('${t.id}')">Ôå╗ Reabrir</button>`}
           <button class="btn btn-sm btn-secondary can-edit" onclick="openTareaModal('${t.id}')">Editar</button>
           <button class="btn btn-sm btn-danger can-edit" onclick="deleteProjectTarea('${t.id}')">Eliminar</button>
         </div>
@@ -1343,7 +1338,7 @@ async function renderProjectTareas(projectId) {
 
 
 async function deleteProjectTarea(id) {
-  if (!confirm('¿Seguro que deseas eliminar esta tarea?')) return;
+  if (!confirm('┬┐Seguro que deseas eliminar esta tarea?')) return;
   await deleteTareaById(id);
   showToast('Tarea eliminada', 'info');
   renderProjectTareas(APP.currentProjectId);
@@ -1356,7 +1351,7 @@ async function completeProjectTarea(id) {
   if (t) {
     t.status = 'completada';
     await upsertTarea(t);
-    showToast('Tarea completada 🎉', 'success');
+    showToast('Tarea completada ­ƒÄë', 'success');
     renderProjectTareas(APP.currentProjectId);
     if (APP.currentView === 'tareas') renderTareas(APP.currentCategory);
   }
@@ -1374,7 +1369,7 @@ async function reopenProjectTarea(id) {
   }
 }
 
-// ── FILES ─────────────────────────────────────────────────────
+// ÔöÇÔöÇ FILES ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 async function renderFiles(projectId) {
   const all = await getFiles();
   const files = all.filter(f => f.projectId === projectId);
@@ -1393,7 +1388,7 @@ async function renderFiles(projectId) {
         <div class="file-icon" style="background:${bg}">${icon}</div>
         <div class="file-name">${escHtml(f.name)}</div>
         <div class="file-size">${formatSize(f.size)}</div>
-        <button class="file-delete can-edit" onclick="event.stopPropagation(); deleteFile('${f.id}')" title="Eliminar">×</button>
+        <button class="file-delete can-edit" onclick="event.stopPropagation(); deleteFile('${f.id}')" title="Eliminar">├ù</button>
       </div>`;
     }).join('');
     grid.innerHTML = '';
@@ -1435,10 +1430,10 @@ async function handleFileUpload(input) {
       // Usar Supabase Storage nativo en lugar de Base64
       const publicUrl = await uploadFileToStorage(APP.currentProjectId, tempFileId, file);
 
-      if (progressBar) progressBar.style.width = '80%'; // Ya subió a storage
+      if (progressBar) progressBar.style.width = '80%'; // Ya subi├│ a storage
 
       if (publicUrl) {
-        // Guardar registro en base de datos apuntando a la URL pública final
+        // Guardar registro en base de datos apuntando a la URL p├║blica final
         await upsertFile({
           id: tempFileId,
           projectId: APP.currentProjectId,
@@ -1480,7 +1475,7 @@ async function openLightboxFile(fileId) {
   openLightboxData(f.dataUrl, f.type, f.name);
 }
 
-// ── CLIENTES ─────────────────────────────────────────────────
+// ÔöÇÔöÇ CLIENTES ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 async function renderClientes(filter = '') {
   let clients = await getClients();
   const user = getCurrentUser();
@@ -1510,9 +1505,9 @@ async function renderClientes(filter = '') {
     const projCount = projects.filter(p => p.client === c.name || p.clientId === c.id).length;
     const catLabel = c.category ? (CATEGORIES[c.category]?.icon + ' ' + CATEGORIES[c.category]?.label) : 'Ambas';
     const metaLines = [
-      c.email ? `<span>✉️ ${escHtml(c.email)}</span>` : '',
-      c.phone ? `<span>📞 ${escHtml(c.phone)}</span>` : '',
-      c.rut ? `<span>🪪 ${escHtml(c.rut)}</span>` : '',
+      c.email ? `<span>Ô£ë´©Å ${escHtml(c.email)}</span>` : '',
+      c.phone ? `<span>­ƒô× ${escHtml(c.phone)}</span>` : '',
+      c.rut ? `<span>­ƒ¬¬ ${escHtml(c.rut)}</span>` : '',
     ].filter(Boolean).join('');
     return `<div class="client-card" onclick="openClientDetail('${c.id}')">
       <div class="client-card-header">
@@ -1521,7 +1516,7 @@ async function renderClientes(filter = '') {
       </div>
       <div class="client-card-meta">${metaLines}</div>
       <div class="client-card-footer">
-        <span class="client-proj-count">📁 ${projCount} proyecto${projCount !== 1 ? 's' : ''}</span>
+        <span class="client-proj-count">­ƒôü ${projCount} proyecto${projCount !== 1 ? 's' : ''}</span>
         <div class="client-card-actions">
           ${canEdit ? `<button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();openClientModal('${c.id}')">Editar</button>
           <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteClient('${c.id}')">Eliminar</button>` : ''}
@@ -1552,10 +1547,10 @@ async function openClientDetail(clientId) {
   $('#client-hero-name').textContent = c.name;
 
   const metaParts = [
-    c.rut ? `<span>🪪 ${escHtml(c.rut)}</span>` : '',
-    c.email ? `<span>✉️ ${escHtml(c.email)}</span>` : '',
-    c.phone ? `<span>📞 ${escHtml(c.phone)}</span>` : '',
-    c.address ? `<span>📍 ${escHtml(c.address)}</span>` : '',
+    c.rut ? `<span>­ƒ¬¬ ${escHtml(c.rut)}</span>` : '',
+    c.email ? `<span>Ô£ë´©Å ${escHtml(c.email)}</span>` : '',
+    c.phone ? `<span>­ƒô× ${escHtml(c.phone)}</span>` : '',
+    c.address ? `<span>­ƒôì ${escHtml(c.address)}</span>` : '',
   ].filter(Boolean).join('');
   $('#client-hero-meta').innerHTML = metaParts;
 
@@ -1588,7 +1583,7 @@ async function openClientDetail(clientId) {
       const catInfo = CATEGORIES[p.category] || {};
       return `<tr>
         <td style="font-weight:600;cursor:pointer;color:var(--text-primary)" onclick="openProjectDetail('${p.id}')">${escHtml(p.name)}</td>
-        <td>${catInfo.icon || ''} ${catInfo.label || p.category || '—'}</td>
+        <td>${catInfo.icon || ''} ${catInfo.label || p.category || 'ÔÇö'}</td>
         <td><span class="stage-badge" style="background:${stage.color}22;color:${stage.color}">${stage.label}</span></td>
         <td style="font-weight:600;color:var(--success)">${formatCLP(p.value)}</td>
         <td>${formatDate(p.date)}</td>
@@ -1666,21 +1661,21 @@ async function saveClient() {
 }
 
 async function deleteClient(id) {
-  if (!confirm('¿Eliminar este cliente? Los proyectos asociados se conservarán.')) return;
+  if (!confirm('┬┐Eliminar este cliente? Los proyectos asociados se conservar├ín.')) return;
   await deleteClientById(id);
   showToast('Cliente eliminado', 'info');
   showView('clientes', 'Clientes', null);
 }
 
-// ── GLOBAL GASTOS VIEW (Excel Style) ─────────────────────────
+// ÔöÇÔöÇ GLOBAL GASTOS VIEW (Excel Style) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 // State for the Excel table
 APP.xlsState = {
   allGastos: [],      // full unfiltered dataset
-  projectMap: {},     // id → name
+  projectMap: {},     // id ÔåÆ name
   isAdmin: false,
   sortCol: 'date',
   sortAsc: false,
-  filters: {},        // colKey → string value
+  filters: {},        // colKey ÔåÆ string value
   selectedId: null,
 };
 
@@ -1690,10 +1685,10 @@ function _getXlsCols(isAdmin) {
     { key: 'project', label: 'Proyecto', editable: false, type: 'text' },
     ...(isAdmin ? [{ key: 'userName', label: 'Colaborador', editable: false, type: 'text' }] : []),
     { key: 'date', label: 'Fecha', editable: true, type: 'date' },
-    { key: 'description', label: 'Descripción', editable: true, type: 'text' },
+    { key: 'description', label: 'Descripci├│n', editable: true, type: 'text' },
     {
-      key: 'category', label: 'Categoría', editable: true, type: 'select',
-      options: ['Transporte', 'Alimentación', 'Alojamiento', 'Materiales', 'Servicios', 'Otro']
+      key: 'category', label: 'Categor├¡a', editable: true, type: 'select',
+      options: ['Transporte', 'Alimentaci├│n', 'Alojamiento', 'Materiales', 'Servicios', 'Otro']
     },
     { key: 'amount', label: 'Monto', editable: true, type: 'number' },
     { key: 'voucher', label: 'Comprobante', editable: true, type: 'text' },
@@ -1739,7 +1734,7 @@ async function renderGastosGlobal(category) {
   headerRow.innerHTML = cols.map(c => {
     if (!c.label) return `<th style="width:80px"></th>`;
     const isSorted = APP.xlsState.sortCol === c.key;
-    const arrow = isSorted ? (APP.xlsState.sortAsc ? ' ▲' : ' ▼') : ' ⬍';
+    const arrow = isSorted ? (APP.xlsState.sortAsc ? ' Ôû▓' : ' Ôû╝') : ' Ô¼ì';
     const sortable = ['project', 'userName', 'date', 'description', 'category', 'amount', 'voucher'].includes(c.key);
     return `<th class="${sortable ? 'sortable' : ''}"
       ${sortable ? `onclick="_xlsSortBy('${c.key}')"` : ''}
@@ -1756,7 +1751,7 @@ async function renderGastosGlobal(category) {
         ${c.options.map(o => `<option value="${o}" ${val === o ? 'selected' : ''}>${o}</option>`).join('')}
       </select></th>`;
     }
-    return `<th><input type="${c.type === 'number' ? 'number' : 'text'}" class="xls-col-filter" data-col="${c.key}" value="${escHtml(val)}" placeholder="🔍" oninput="_xlsFilterDebounce(this)"/></th>`;
+    return `<th><input type="${c.type === 'number' ? 'number' : 'text'}" class="xls-col-filter" data-col="${c.key}" value="${escHtml(val)}" placeholder="­ƒöì" oninput="_xlsFilterDebounce(this)"/></th>`;
   }).join('');
 
   // Render rows
@@ -1843,10 +1838,10 @@ function _xlsRenderRows() {
   }
   empty.classList.add('hidden');
 
-  const CATS = ['Transporte', 'Alimentación', 'Alojamiento', 'Materiales', 'Servicios', 'Otro'];
+  const CATS = ['Transporte', 'Alimentaci├│n', 'Alojamiento', 'Materiales', 'Servicios', 'Otro'];
 
   tbody.innerHTML = rows.map(g => {
-    const projName = projectMap[g.projectId] || '—';
+    const projName = projectMap[g.projectId] || 'ÔÇö';
     const isSelected = APP.xlsState.selectedId === g.id;
 
     const cells = cols.map(c => {
@@ -1854,31 +1849,31 @@ function _xlsRenderRows() {
         case 'project':
           return `<td title="${escHtml(projName)}" style="font-weight:600;color:var(--text-primary);cursor:pointer" onclick="event.stopPropagation();openProjectDetail('${g.projectId}')">${escHtml(projName)}</td>`;
         case 'userName':
-          return `<td style="color:var(--text-muted);font-size:12px">${escHtml(g.userName || '—')}</td>`;
+          return `<td style="color:var(--text-muted);font-size:12px">${escHtml(g.userName || 'ÔÇö')}</td>`;
         case 'date':
           return `<td class="xls-cell-editable" ondblclick="_xlsStartEdit(this,'${g.id}','date','date','${escHtml(g.date || '')}')" title="Doble clic para editar">${formatDate(g.date)}</td>`;
         case 'description':
           return `<td class="xls-cell-editable" style="max-width:200px" ondblclick="_xlsStartEdit(this,'${g.id}','description','text','${escHtml(g.description || '')}')" title="Doble clic para editar">${escHtml(g.description)}</td>`;
         case 'category':
-          return `<td class="xls-cell-editable" ondblclick="_xlsStartEdit(this,'${g.id}','category','select','${escHtml(g.category || '')}','${CATS.join('|')}')" title="Doble clic para editar"><span class="xls-has-receipt" style="background:rgba(79,126,255,0.10);color:var(--brand-primary)">${escHtml(g.category || '—')}</span></td>`;
+          return `<td class="xls-cell-editable" ondblclick="_xlsStartEdit(this,'${g.id}','category','select','${escHtml(g.category || '')}','${CATS.join('|')}')" title="Doble clic para editar"><span class="xls-has-receipt" style="background:rgba(79,126,255,0.10);color:var(--brand-primary)">${escHtml(g.category || 'ÔÇö')}</span></td>`;
         case 'amount':
           return `<td class="xls-cell-editable" style="font-weight:700;color:var(--success)" ondblclick="_xlsStartEdit(this,'${g.id}','amount','number','${g.amount || 0}')" title="Doble clic para editar">${formatCLP(g.amount)}</td>`;
         case 'voucher':
-          return `<td class="xls-cell-editable" style="color:var(--text-muted)" ondblclick="_xlsStartEdit(this,'${g.id}','voucher','text','${escHtml(g.voucher || '')}')" title="Doble clic para editar">${escHtml(g.voucher || '—')}</td>`;
+          return `<td class="xls-cell-editable" style="color:var(--text-muted)" ondblclick="_xlsStartEdit(this,'${g.id}','voucher','text','${escHtml(g.voucher || '')}')" title="Doble clic para editar">${escHtml(g.voucher || 'ÔÇö')}</td>`;
         case 'receipt':
           if (g.receiptDataUrl) {
             const isImg = !g.receiptDataUrl.startsWith('data:application/pdf');
             return `<td onclick="event.stopPropagation();_xlsShowReceipt('${g.id}')" title="Ver boleta">
-              ${isImg ? `<img class="xls-thumb" src="${g.receiptDataUrl}" alt="boleta"/>` : `<span class="xls-has-receipt">📄 PDF</span>`}
+              ${isImg ? `<img class="xls-thumb" src="${g.receiptDataUrl}" alt="boleta"/>` : `<span class="xls-has-receipt">­ƒôä PDF</span>`}
             </td>`;
           }
-          return `<td style="color:var(--text-muted);font-size:12px">—</td>`;
+          return `<td style="color:var(--text-muted);font-size:12px">ÔÇö</td>`;
         case 'actions':
           return canEdit ? `<td onclick="event.stopPropagation()"><div class="xls-row-actions">
-            <button class="btn btn-sm btn-ghost" style="padding:3px 8px;font-size:11px" onclick="openGastoModal('${g.id}')">✏</button>
-            <button class="btn btn-sm btn-danger" style="padding:3px 8px;font-size:11px" onclick="deleteGastoGlobal('${g.id}')">✕</button>
+            <button class="btn btn-sm btn-ghost" style="padding:3px 8px;font-size:11px" onclick="openGastoModal('${g.id}')">Ô£Å</button>
+            <button class="btn btn-sm btn-danger" style="padding:3px 8px;font-size:11px" onclick="deleteGastoGlobal('${g.id}')">Ô£ò</button>
           </div></td>` : '<td></td>';
-        default: return '<td>—</td>';
+        default: return '<td>ÔÇö</td>';
       }
     }).join('');
 
@@ -1912,9 +1907,9 @@ function _xlsShowReceipt(id) {
 
   const isPdf = g.receiptDataUrl.startsWith('data:application/pdf') || g.receiptDataUrl.includes('.pdf');
   const metaHtml = `<div class="xls-receipt-meta">
-    <strong>Proyecto:</strong> ${escHtml(APP.xlsState.projectMap[g.projectId] || '—')}<br>
+    <strong>Proyecto:</strong> ${escHtml(APP.xlsState.projectMap[g.projectId] || 'ÔÇö')}<br>
     <strong>Fecha:</strong> ${formatDate(g.date)}<br>
-    <strong>Descripción:</strong> ${escHtml(g.description || '—')}<br>
+    <strong>Descripci├│n:</strong> ${escHtml(g.description || 'ÔÇö')}<br>
     <strong>Monto:</strong> ${formatCLP(g.amount)}<br>
     ${g.userName ? `<strong>Colaborador:</strong> ${escHtml(g.userName)}<br>` : ''}
   </div>`;
@@ -1967,7 +1962,7 @@ function _xlsStartEdit(td, gastoId, field, type, currentVal, optionsStr) {
     if (field === 'amount') td.innerHTML = `<span style="font-weight:700;color:var(--success)">${formatCLP(newVal)}</span>`;
     else if (field === 'date') td.innerHTML = formatDate(newVal);
     else if (field === 'category') td.innerHTML = `<span class="xls-has-receipt" style="background:rgba(79,126,255,0.10);color:var(--brand-primary)">${escHtml(newVal)}</span>`;
-    else td.innerHTML = escHtml(newVal) || '—';
+    else td.innerHTML = escHtml(newVal) || 'ÔÇö';
 
     // Save to Supabase
     const ok = await updateGastoField(gastoId, field, newVal);
@@ -1989,7 +1984,7 @@ function _xlsStartEdit(td, gastoId, field, type, currentVal, optionsStr) {
 }
 
 async function deleteGastoGlobal(id) {
-  if (!confirm('¿Eliminar este gasto?')) return;
+  if (!confirm('┬┐Eliminar este gasto?')) return;
   await deleteGastoById(id);
   APP.xlsState.allGastos = APP.xlsState.allGastos.filter(g => g.id !== id);
   _xlsRenderRows();
@@ -2007,7 +2002,7 @@ async function exportGastosGlobal() {
   const { allGastos, projectMap } = APP.xlsState;
   if (!allGastos.length) { showToast('No hay gastos para exportar', 'error'); return; }
   const rows = [
-    ['Proyecto', 'Colaborador', 'Fecha', 'Descripción', 'Categoría', 'Monto', 'Comprobante'],
+    ['Proyecto', 'Colaborador', 'Fecha', 'Descripci├│n', 'Categor├¡a', 'Monto', 'Comprobante'],
     ...allGastos.map(g => [
       `"${(projectMap[g.projectId] || '').replace(/"/g, '""')}"`,
       `"${(g.userName || '').replace(/"/g, '""')}"`,
@@ -2027,7 +2022,7 @@ async function exportGastosGlobal() {
   showToast('CSV exportado', 'success');
 }
 
-// ── LIGHTBOX ──────────────────────────────────────────────────
+// ÔöÇÔöÇ LIGHTBOX ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 function openLightboxData(dataUrl, fileType, fileName) {
   $('#lightbox-img').classList.add('hidden');
   $('#lightbox-iframe').classList.add('hidden');
@@ -2071,7 +2066,7 @@ function closeLightbox() {
   $('#lightbox-iframe').src = '';
 }
 
-// ── GASTOS ────────────────────────────────────────────────────
+// ÔöÇÔöÇ GASTOS ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 async function renderGastos(projectId, filterCat = '') {
   const all = await getGastos();
   const currentUser = getCurrentUser();
@@ -2102,19 +2097,19 @@ async function renderGastos(projectId, filterCat = '') {
   tbody.innerHTML = [...gastos].sort((a, b) => (b.date || '').localeCompare(a.date || '')).map(g => {
     const thumb = g.receiptDataUrl
       ? `<img class="receipt-thumb" src="${g.receiptDataUrl}" alt="Boleta" onclick="openLightbox('${g.id}')" />`
-      : `<span style="color:var(--text-muted);font-size:12px">—</span>`;
+      : `<span style="color:var(--text-muted);font-size:12px">ÔÇö</span>`;
 
-    const creatorInfo = g.userName ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px">👤 ${escHtml(g.userName)}</div>` : '';
+    const creatorInfo = g.userName ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px">­ƒæñ ${escHtml(g.userName)}</div>` : '';
 
     return `<tr>
-    <td>${g.date ? formatDate(g.date) : '—'}</td>
+    <td>${g.date ? formatDate(g.date) : 'ÔÇö'}</td>
     <td>
       <div style="font-weight:500">${escHtml(g.description)}</div>
       ${creatorInfo}
     </td>
     <td><span class="stage-badge" style="background:rgba(79,126,255,0.12);color:var(--accent)">${escHtml(g.category)}</span></td>
     <td style="font-weight:700;color:var(--success)">${formatCLP(g.amount)}</td>
-    <td style="color:var(--text-muted)">${escHtml(g.voucher || '—')}</td>
+    <td style="color:var(--text-muted)">${escHtml(g.voucher || 'ÔÇö')}</td>
     <td>${thumb}</td>
     <td><div class="td-actions">
       ${canEdit ? `<button class="btn btn-sm btn-ghost" onclick="openGastoModal('${g.id}')">Editar</button>
@@ -2183,7 +2178,7 @@ async function saveGasto() {
   const description = $('#gasto-description').value.trim();
   const amount = Number($('#gasto-amount').value);
   const projectId = $('#gasto-project-id').value || APP.currentProjectId;
-  if (!description) { showToast('La descripción es obligatoria', 'error'); return; }
+  if (!description) { showToast('La descripci├│n es obligatoria', 'error'); return; }
   if (!amount) { showToast('El monto debe ser mayor a 0', 'error'); return; }
   if (!projectId) { showToast('Selecciona un proyecto', 'error'); return; }
 
@@ -2219,7 +2214,7 @@ async function saveGasto() {
 }
 
 async function deleteGasto(id) {
-  if (!confirm('¿Eliminar este gasto?')) return;
+  if (!confirm('┬┐Eliminar este gasto?')) return;
   await deleteGastoById(id);
   renderGastos(APP.currentProjectId, $('#gasto-filter-cat').value);
   showToast('Gasto eliminado', 'info');
@@ -2230,7 +2225,7 @@ async function exportGastosCSV() {
   if (!gastos.length) { showToast('No hay gastos para exportar', 'error'); return; }
   const projects = await getProjects();
   const project = projects.find(p => p.id === APP.currentProjectId);
-  const rows = [['Fecha', 'Descripción', 'Categoría', 'Monto', 'Comprobante'], ...gastos.map(g => [g.date || '', `"${(g.description || '').replace(/"/g, '""')}"`, g.category || '', g.amount || 0, g.voucher || ''])].map(r => r.join(','));
+  const rows = [['Fecha', 'Descripci├│n', 'Categor├¡a', 'Monto', 'Comprobante'], ...gastos.map(g => [g.date || '', `"${(g.description || '').replace(/"/g, '""')}"`, g.category || '', g.amount || 0, g.voucher || ''])].map(r => r.join(','));
   const blob = new Blob(['\uFEFF' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -2239,7 +2234,7 @@ async function exportGastosCSV() {
   showToast('CSV exportado', 'success');
 }
 
-// ── BULK UPLOAD ───────────────────────────────────────────────
+// ÔöÇÔöÇ BULK UPLOAD ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 APP.bulkFiles = []; // { file, dataUrl, ocrData, status: 'pending'|'processing'|'done'|'error' }
 
 function openBulkUploadModal() {
@@ -2273,7 +2268,7 @@ async function processBulkFiles(files) {
     item.status = 'processing';
     updateBulkList();
 
-    // OCR (solo para imágenes, no PDF)
+    // OCR (solo para im├ígenes, no PDF)
     try {
       const isPDF = item.file.type === 'application/pdf';
       if (!isPDF && typeof Tesseract !== 'undefined') {
@@ -2314,7 +2309,7 @@ async function updateBulkList() {
                 <div class="bei-preview" style="background-image:url('${item.dataUrl}')"></div>
                 <div class="bei-form">
                   <div class="bei-header">
-                    <span class="bei-name">✅ Guardado: ${escHtml(item.name)}</span>
+                    <span class="bei-name">Ô£à Guardado: ${escHtml(item.name)}</span>
                   </div>
                 </div>
               </div>`;
@@ -2335,7 +2330,7 @@ async function updateBulkList() {
           <div class="form-group"><label class="form-label" style="font-size:10px">Proyecto *</label>
             <select class="form-input" id="bei-proj-${index}" style="padding:6px 10px;font-size:13px">${projectOptions}</select>
           </div>
-          <div class="form-group"><label class="form-label" style="font-size:10px">Categoría</label>
+          <div class="form-group"><label class="form-label" style="font-size:10px">Categor├¡a</label>
             <select class="form-input" id="bei-cat-${index}" style="padding:6px 10px;font-size:13px">
               ${categorias.map(c => `<option value="${c}" ${c === 'Otros' ? 'selected' : ''}>${c}</option>`).join('')}
             </select>
@@ -2344,10 +2339,10 @@ async function updateBulkList() {
         <div class="bei-row">
           <div class="form-group"><label class="form-label" style="font-size:10px">Monto *</label><input type="number" class="form-input" id="bei-amount-${index}" value="${amount}" style="padding:6px 10px;font-size:13px" /></div>
           <div class="form-group"><label class="form-label" style="font-size:10px">Fecha</label><input type="date" class="form-input" id="bei-date-${index}" value="${date}" style="padding:6px 10px;font-size:13px" /></div>
-          <div class="form-group"><label class="form-label" style="font-size:10px">N° Comp.</label><input type="text" class="form-input" id="bei-voucher-${index}" value="${voucher}" style="padding:6px 10px;font-size:13px" /></div>
+          <div class="form-group"><label class="form-label" style="font-size:10px">N┬░ Comp.</label><input type="text" class="form-input" id="bei-voucher-${index}" value="${voucher}" style="padding:6px 10px;font-size:13px" /></div>
         </div>
         <div class="form-group">
-          <label class="form-label" style="font-size:10px">Descripción *</label>
+          <label class="form-label" style="font-size:10px">Descripci├│n *</label>
           <input type="text" class="form-input" id="bei-desc-${index}" value="${desc}" style="padding:6px 10px;font-size:13px" />
         </div>
         <div class="bei-actions">
@@ -2359,7 +2354,7 @@ async function updateBulkList() {
 }
 
 function updateBulkItemProgress(name, pct) {
-  $('#bulk-progress-text').textContent = `Analizando "${name}"… ${pct}%`;
+  $('#bulk-progress-text').textContent = `Analizando "${name}"ÔÇª ${pct}%`;
 }
 
 async function saveSingleBulkGasto(index) {
@@ -2375,8 +2370,8 @@ async function saveSingleBulkGasto(index) {
   const description = $(`#bei-desc-${index}`).value.trim();
 
   if (!projectId) { showToast('Selecciona un proyecto', 'error'); return; }
-  if (!amount || isNaN(amount) || amount <= 0) { showToast('Ingresa un monto válido', 'error'); return; }
-  if (!description) { showToast('La descripción es obligatoria', 'error'); return; }
+  if (!amount || isNaN(amount) || amount <= 0) { showToast('Ingresa un monto v├ílido', 'error'); return; }
+  if (!description) { showToast('La descripci├│n es obligatoria', 'error'); return; }
 
   const currentUser = getCurrentUser();
   const g = {
@@ -2417,7 +2412,7 @@ async function saveSingleBulkGasto(index) {
   }
 }
 
-// ── GASTO REVIEW (bandeja de aprobación) ─────────────────────
+// ÔöÇÔöÇ GASTO REVIEW (bandeja de aprobaci├│n) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 APP.reviewIndex = 0;
 APP.reviewPending = [];
 
@@ -2431,7 +2426,7 @@ async function renderGastosReview() {
   const cardArea = $('#review-card-area');
   const empty = $('#review-empty');
 
-  counter.textContent = count > 0 ? `${count} gasto(s) pendiente(s) de revisión` : 'Sin pendientes';
+  counter.textContent = count > 0 ? `${count} gasto(s) pendiente(s) de revisi├│n` : 'Sin pendientes';
 
   if (count === 0) {
     cardArea.innerHTML = '';
@@ -2452,7 +2447,7 @@ async function renderReviewCard() {
   if (idx >= pending.length) {
     cardArea.innerHTML = '';
     $('#review-empty').classList.remove('hidden');
-    $('#review-counter').textContent = '¡Sin pendientes! Todos los gastos están revisados.';
+    $('#review-counter').textContent = '┬íSin pendientes! Todos los gastos est├ín revisados.';
     renderPendingBadge();
     return;
   }
@@ -2477,22 +2472,22 @@ async function renderReviewCard() {
     }
         </div>
         <div class="review-form-side">
-          <div class="review-project-tag">${escHtml(proj?.name || '—')}</div>
+          <div class="review-project-tag">${escHtml(proj?.name || 'ÔÇö')}</div>
           <div class="form-group"><label class="form-label">Fecha</label><input type="date" class="form-input" id="rv-date" value="${g.date || today()}" /></div>
-          <div class="form-group"><label class="form-label">Categoría</label>
+          <div class="form-group"><label class="form-label">Categor├¡a</label>
             <select class="form-input" id="rv-category">
-              ${['Transporte', 'Alimentación', 'Alojamiento', 'Materiales', 'Honorarios', 'Notaría', 'Otros'].map(c => `<option value="${c}" ${g.category === c ? 'selected' : ''}>${c}</option>`).join('')}
+              ${['Transporte', 'Alimentaci├│n', 'Alojamiento', 'Materiales', 'Honorarios', 'Notar├¡a', 'Otros'].map(c => `<option value="${c}" ${g.category === c ? 'selected' : ''}>${c}</option>`).join('')}
             </select>
           </div>
-          <div class="form-group"><label class="form-label">Descripción</label><input type="text" class="form-input" id="rv-description" value="${escHtml(g.description || '')}" /></div>
+          <div class="form-group"><label class="form-label">Descripci├│n</label><input type="text" class="form-input" id="rv-description" value="${escHtml(g.description || '')}" /></div>
           <div class="form-group"><label class="form-label">Monto (CLP)</label><input type="number" class="form-input" id="rv-amount" value="${g.amount || ''}" /></div>
-          <div class="form-group"><label class="form-label">Comprobante / N°</label><input type="text" class="form-input" id="rv-voucher" value="${escHtml(g.voucher || '')}" /></div>
+          <div class="form-group"><label class="form-label">Comprobante / N┬░</label><input type="text" class="form-input" id="rv-voucher" value="${escHtml(g.voucher || '')}" /></div>
         </div>
       </div>
       <div class="review-actions">
-        <button class="btn btn-danger" onclick="rejectGasto('${g.id}')">❌ Rechazar</button>
-        <button class="btn btn-ghost" onclick="skipReview()">⏭ Saltar</button>
-        <button class="btn btn-success" onclick="approveGasto('${g.id}')">✅ Aprobar</button>
+        <button class="btn btn-danger" onclick="rejectGasto('${g.id}')">ÔØî Rechazar</button>
+        <button class="btn btn-ghost" onclick="skipReview()">ÔÅ¡ Saltar</button>
+        <button class="btn btn-success" onclick="approveGasto('${g.id}')">Ô£à Aprobar</button>
       </div>
     </div>`;
 }
@@ -2500,14 +2495,14 @@ async function renderReviewCard() {
 async function approveGasto(id) {
   // Save edits before approving
   await _patchReviewFieldsAndSetStatus(id, 'aprobado');
-  showToast('Gasto aprobado ✅', 'success');
+  showToast('Gasto aprobado Ô£à', 'success');
   _nextReview();
 }
 
 async function rejectGasto(id) {
   const note = prompt('Motivo del rechazo (opcional):') || '';
   await _patchReviewFieldsAndSetStatus(id, 'rechazado', note);
-  showToast('Gasto rechazado ❌', 'info');
+  showToast('Gasto rechazado ÔØî', 'info');
   _nextReview();
 }
 
@@ -2553,7 +2548,7 @@ function openLightboxDirect(gastoId) {
   $('#lightbox').classList.remove('hidden');
 }
 
-// ── RECEIPT HELPERS & OCR ────────────────────────────────────
+// ÔöÇÔöÇ RECEIPT HELPERS & OCR ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 function resetReceiptUI() {
   const ph = $('#receipt-placeholder');
   const pv = $('#receipt-preview');
@@ -2585,21 +2580,21 @@ async function handleReceiptUpload(file) {
 
 async function runOCR(dataUrl) {
   if (typeof Tesseract === 'undefined') {
-    showToast('OCR no disponible (revisa tu conexión)', 'error');
+    showToast('OCR no disponible (revisa tu conexi├│n)', 'error');
     return;
   }
   const status = $('#ocr-status');
   const result = $('#ocr-result');
   status.classList.remove('hidden');
   result.classList.add('hidden');
-  $('#ocr-status-text').textContent = 'Leyendo imagen…';
+  $('#ocr-status-text').textContent = 'Leyendo imagenÔÇª';
   try {
     const { data: { text } } = await Tesseract.recognize(dataUrl, 'spa', {
       logger: m => {
         if (m.status === 'recognizing text') {
           const pct = Math.round((m.progress || 0) * 100);
           const el = $('#ocr-status-text');
-          if (el) el.textContent = `Analizando texto… ${pct}%`;
+          if (el) el.textContent = `Analizando textoÔÇª ${pct}%`;
         }
       }
     });
@@ -2663,7 +2658,7 @@ function extractReceiptData(text) {
   return result;
 }
 
-// ── TABS ──────────────────────────────────────────────────────
+// ÔöÇÔöÇ TABS ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 function activateTab(tabId) {
   $$('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
   $$('.tab-content').forEach(c => { c.classList.toggle('hidden', c.id !== tabId); c.classList.toggle('active', c.id === tabId); });
@@ -2676,7 +2671,7 @@ function activateTab(tabId) {
   }
 }
 
-// ── ADMIN PANEL ───────────────────────────────────────────────
+// ÔöÇÔöÇ ADMIN PANEL ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 async function renderAdminPanel() {
   const users = await getUsers();
   const projects = await getProjects();
@@ -2721,7 +2716,7 @@ async function renderAdminPanel() {
   $('#admin-sys-info').innerHTML = sysInfo.map(i => `<div class="info-item"><span class="info-label">${i.label}</span><span class="info-value" style="font-weight:700">${i.value}</span></div>`).join('');
 }
 
-// ── USER MODAL ────────────────────────────────────────────────
+// ÔöÇÔöÇ USER MODAL ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 async function openUserModal(userId = null) {
   APP.editingUserId = userId;
   const err = $('#user-form-error');
@@ -2744,7 +2739,7 @@ async function openUserModal(userId = null) {
     $('#user-password2').required = false;
     const lbl = document.querySelector('label[for="user-password"]');
     const lbl2 = document.querySelector('label[for="user-password2"]');
-    if (lbl) lbl.textContent = 'Nueva Contraseña (dejar en blanco para no cambiar)';
+    if (lbl) lbl.textContent = 'Nueva Contrase├▒a (dejar en blanco para no cambiar)';
     if (lbl2) lbl2.textContent = 'Confirmar nueva (si aplica)';
   } else {
     $('#modal-user-title').textContent = 'Nuevo Usuario';
@@ -2757,7 +2752,7 @@ async function openUserModal(userId = null) {
     $('#user-password2').value = '';
     const lbl = document.querySelector('label[for="user-password"]');
     const lbl2 = document.querySelector('label[for="user-password2"]');
-    if (lbl) lbl.textContent = 'Contraseña *';
+    if (lbl) lbl.textContent = 'Contrase├▒a *';
     if (lbl2) lbl2.textContent = 'Confirmar *';
   }
   $('#modal-user').classList.remove('hidden');
@@ -2779,20 +2774,20 @@ async function saveUser() {
   const show = (msg) => { err.textContent = msg; err.classList.remove('hidden'); };
 
   if (!name || !username) { show('Nombre y usuario son obligatorios'); return; }
-  if (!access.length) { show('Selecciona al menos un acceso de categoría'); return; }
+  if (!access.length) { show('Selecciona al menos un acceso de categor├¡a'); return; }
 
   const users = await getUsers();
 
   if (APP.editingUserId) {
-    if (pass && pass !== pass2) { show('Las contraseñas no coinciden'); return; }
+    if (pass && pass !== pass2) { show('Las contrase├▒as no coinciden'); return; }
     if (users.some(u => u.username === username && u.id !== APP.editingUserId)) { show('Ese nombre de usuario ya existe'); return; }
     const u = { ...users.find(u => u.id === APP.editingUserId), name, username, role, access };
     if (pass) u.password = await hashPassword(pass);
     await upsertUser(u);
     showToast('Usuario actualizado', 'success');
   } else {
-    if (!pass) { show('La contraseña es obligatoria'); return; }
-    if (pass !== pass2) { show('Las contraseñas no coinciden'); return; }
+    if (!pass) { show('La contrase├▒a es obligatoria'); return; }
+    if (pass !== pass2) { show('Las contrase├▒as no coinciden'); return; }
     if (users.some(u => u.username === username)) { show('Ese nombre de usuario ya existe'); return; }
     await upsertUser({ id: uid(), name, username, role, access, password: await hashPassword(pass), createdAt: new Date().toISOString() });
     showToast('Usuario creado', 'success');
@@ -2805,13 +2800,13 @@ async function saveUser() {
 
 async function deleteUser(id) {
   if (id === 'admin-default') { showToast('No se puede eliminar el admin principal', 'error'); return; }
-  if (!confirm('¿Eliminar este usuario?')) return;
+  if (!confirm('┬┐Eliminar este usuario?')) return;
   await deleteUserById(id);
   showToast('Usuario eliminado', 'info');
   renderAdminPanel();
 }
 
-// ── CHANGE PASSWORD ───────────────────────────────────────────
+// ÔöÇÔöÇ CHANGE PASSWORD ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 function openChangePassModal(userId) {
   APP.changingPassUserId = userId;
   $('#chpass-new').value = '';
@@ -2827,9 +2822,9 @@ async function saveNewPassword() {
   const confirm2 = $('#chpass-confirm').value;
   const err = $('#chpass-error');
 
-  if (!newPass) { err.textContent = 'Ingresa la nueva contraseña'; err.classList.remove('hidden'); return; }
-  if (newPass !== confirm2) { err.textContent = 'Las contraseñas no coinciden'; err.classList.remove('hidden'); return; }
-  if (newPass.length < 6) { err.textContent = 'La contraseña debe tener al menos 6 caracteres'; err.classList.remove('hidden'); return; }
+  if (!newPass) { err.textContent = 'Ingresa la nueva contrase├▒a'; err.classList.remove('hidden'); return; }
+  if (newPass !== confirm2) { err.textContent = 'Las contrase├▒as no coinciden'; err.classList.remove('hidden'); return; }
+  if (newPass.length < 6) { err.textContent = 'La contrase├▒a debe tener al menos 6 caracteres'; err.classList.remove('hidden'); return; }
 
   const users = await getUsers();
   const u = users.find(u => u.id === APP.changingPassUserId);
@@ -2838,10 +2833,10 @@ async function saveNewPassword() {
   await upsertUser(u);
   err.classList.add('hidden');
   closeChangePassModal();
-  showToast('Contraseña actualizada', 'success');
+  showToast('Contrase├▒a actualizada', 'success');
 }
 
-// ── COBRANZA ──────────────────────────────────────────────────
+// ÔöÇÔöÇ COBRANZA ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 APP.cobTab = 'gastos'; // 'gastos' | 'cobros'
 
 function switchCobTab(tab) {
@@ -2910,7 +2905,7 @@ function renderCobranzaGastos(gastos, projects) {
       const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
       groupsTemp[groupKey] = {
         projectId: g.projectId,
-        projectName: proj ? proj.name : '—',
+        projectName: proj ? proj.name : 'ÔÇö',
         monthStr: `${monthNames[d.getMonth()]} ${d.getFullYear()}`,
         monthKey: monthKey, // raw sortable
         totalAmount: 0,
@@ -2950,9 +2945,9 @@ function renderCobranzaGastos(gastos, projects) {
 
   tbody.innerHTML = groups.map(g => {
     const badge = g.allCobrados
-      ? `<span class="cobro-badge cobro-badge-done">✓ Cobrado</span>`
-      : `<span class="cobro-badge cobro-badge-pending">⏳ Por cobrar</span>`;
-    const fechaCobro = g.fechaCobro ? formatDate(g.fechaCobro) : '—';
+      ? `<span class="cobro-badge cobro-badge-done">Ô£ô Cobrado</span>`
+      : `<span class="cobro-badge cobro-badge-pending">ÔÅ│ Por cobrar</span>`;
+    const fechaCobro = g.fechaCobro ? formatDate(g.fechaCobro) : 'ÔÇö';
     const btnLabel = g.allCobrados ? 'Desmarcar' : 'Marcar Mes Cobrado';
     const btnClass = g.allCobrados ? 'btn-ghost' : 'btn-success';
 
@@ -2972,7 +2967,7 @@ async function marcarMesCobrado(ids, cobrado) {
   const fechaCobro = cobrado ? today() : null;
   // Update all sequentially (or wait Promise.all if supported)
   await Promise.all(ids.map(id => updateGastoCobrado(id, cobrado, fechaCobro)));
-  showToast(cobrado ? 'Mes cobrado ✓' : 'Mes devuelto a por cobrar', 'success');
+  showToast(cobrado ? 'Mes cobrado Ô£ô' : 'Mes devuelto a por cobrar', 'success');
   renderCobranza();
 }
 
@@ -3001,9 +2996,9 @@ async function renderCobranzaCobros(cobros, projects) {
   empty.classList.add('hidden');
 
   const statusBadge = {
-    pendiente: '<span class="cobro-badge cobro-badge-pending">⏳ Pendiente</span>',
-    pagado: '<span class="cobro-badge cobro-badge-done">✓ Pagado</span>',
-    vencido: '<span class="cobro-badge cobro-badge-overdue">⚠ Vencido</span>',
+    pendiente: '<span class="cobro-badge cobro-badge-pending">ÔÅ│ Pendiente</span>',
+    pagado: '<span class="cobro-badge cobro-badge-done">Ô£ô Pagado</span>',
+    vencido: '<span class="cobro-badge cobro-badge-overdue">ÔÜá Vencido</span>',
   };
 
   tbody.innerHTML = items.map(c => {
@@ -3011,12 +3006,12 @@ async function renderCobranzaCobros(cobros, projects) {
     const pagadoBtn = c.status !== 'pagado'
       ? `<button class="btn btn-sm btn-success" onclick="marcarCobroPagado('${c.id}')">Marcar Pagado</button>` : '';
     return `<tr>
-      <td>${escHtml(proj?.name || '—')}</td>
+      <td>${escHtml(proj?.name || 'ÔÇö')}</td>
       <td>${escHtml(c.concept)}</td>
       <td><strong>${formatCLP(c.amount)}</strong></td>
-      <td>${c.dueDate ? formatDate(c.dueDate) : '—'}</td>
+      <td>${c.dueDate ? formatDate(c.dueDate) : 'ÔÇö'}</td>
       <td>${statusBadge[c.status] || c.status}</td>
-      <td>${c.paidDate ? formatDate(c.paidDate) : '—'}</td>
+      <td>${c.paidDate ? formatDate(c.paidDate) : 'ÔÇö'}</td>
       <td><div class="td-actions">
         ${pagadoBtn}
         <button class="btn btn-sm btn-ghost" onclick="openCobroModal('${c.id}')">Editar</button>
@@ -3033,7 +3028,7 @@ async function marcarCobroPagado(id) {
   c.status = 'pagado';
   c.paidDate = today();
   await upsertCobro(c);
-  showToast('Cobro marcado como pagado ✓', 'success');
+  showToast('Cobro marcado como pagado Ô£ô', 'success');
   renderCobranza();
   updateSidebarBadges();
 }
@@ -3090,7 +3085,7 @@ async function saveCobro() {
 }
 
 async function deleteCobro(id) {
-  if (!confirm('¿Eliminar este cobro?')) return;
+  if (!confirm('┬┐Eliminar este cobro?')) return;
   await deleteCobroById(id);
   showToast('Cobro eliminado', 'info');
   renderCobranza();
@@ -3170,7 +3165,7 @@ async function renderTaskCalendar(category, projectId = null) {
   container.innerHTML = html;
 }
 
-// ── TAREAS (INMOBILIARIO) ───────────────────────────────────
+// ÔöÇÔöÇ TAREAS (INMOBILIARIO) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 APP.editingTareaId = null;
 
 async function renderTareas(category) {
@@ -3231,7 +3226,7 @@ async function renderTareas(category) {
       <td>${formatDate(t.dueDate)}</td>
       <td>
         <div class="td-actions">
-          ${t.status !== 'completada' ? `<button class="btn btn-sm btn-ghost can-edit" onclick="completeTarea('${t.id}')">✓ Completar</button>` : `<button class="btn btn-sm btn-ghost can-edit" onclick="reopenTarea('${t.id}')">↻ Reabrir</button>`}
+          ${t.status !== 'completada' ? `<button class="btn btn-sm btn-ghost can-edit" onclick="completeTarea('${t.id}')">Ô£ô Completar</button>` : `<button class="btn btn-sm btn-ghost can-edit" onclick="reopenTarea('${t.id}')">Ôå╗ Reabrir</button>`}
           <button class="btn btn-sm btn-secondary can-edit" onclick="openTareaModal('${t.id}')">Editar</button>
           <button class="btn btn-sm btn-danger can-edit" onclick="deleteTarea('${t.id}')">Eliminar</button>
         </div>
@@ -3300,9 +3295,9 @@ async function saveTarea() {
   const dueDate = $('#tarea-due-date').value;
 
   if (!projectId) { showToast('Selecciona un proyecto', 'error'); return; }
-  if (!description) { showToast('Ingresa la descripción', 'error'); return; }
+  if (!description) { showToast('Ingresa la descripci├│n', 'error'); return; }
   if (!userId) { showToast('Debes asignar la tarea a una persona', 'error'); return; }
-  if (!dueDate) { showToast('Selecciona la fecha límite', 'error'); return; }
+  if (!dueDate) { showToast('Selecciona la fecha l├¡mite', 'error'); return; }
 
   let status = 'pendiente';
   if (APP.editingTareaId) {
@@ -3330,7 +3325,7 @@ async function saveTarea() {
 }
 
 async function deleteTarea(id) {
-  if (!confirm('¿Seguro que deseas eliminar esta tarea?')) return;
+  if (!confirm('┬┐Seguro que deseas eliminar esta tarea?')) return;
   await deleteTareaById(id);
   showToast('Tarea eliminada', 'info');
   if (APP.currentView === 'project-detail') renderProjectTareas(APP.currentProjectId);
@@ -3343,7 +3338,7 @@ async function completeTarea(id) {
   if (t) {
     t.status = 'completada';
     await upsertTarea(t);
-    showToast('Tarea completada 🎉', 'success');
+    showToast('Tarea completada ­ƒÄë', 'success');
     if (APP.currentView === 'project-detail') renderProjectTareas(APP.currentProjectId);
     else renderTareas(APP.currentCategory);
   }
@@ -3361,11 +3356,11 @@ async function reopenTarea(id) {
   }
 }
 
-// ── INIT ──────────────────────────────────────────────────────
+// ÔöÇÔöÇ INIT ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 async function init() {
   await seedAdmin();
 
-  // Escuchar sesión en tiempo real de Supabase (Microsoft Graph)
+  // Escuchar sesi├│n en tiempo real de Supabase (Microsoft Graph)
   _supabase.auth.onAuthStateChange(async (event, session) => {
     if (session && session.user) {
       // Evitar doble boot: onAuthStateChange puede dispararse con INITIAL_SESSION + SIGNED_IN
@@ -3390,7 +3385,7 @@ async function init() {
         await upsertUser(dbUser);
       }
 
-      // Persistir provider_token (Microsoft Graph) si existe en la sesión
+      // Persistir provider_token (Microsoft Graph) si existe en la sesi├│n
       if (session.provider_token) {
         APP.msToken = session.provider_token; // Cache en memoria
         localStorage.setItem('ms_graph_token', session.provider_token);
@@ -3400,7 +3395,7 @@ async function init() {
       setCurrentUser(dbUser);
       bootApp(dbUser);
     } else {
-      // No hay sesión
+      // No hay sesi├│n
       APP.booted = false;
       clearSession();
       const shell = $('#app-shell');
@@ -3476,7 +3471,7 @@ async function init() {
   // Files
   $('#file-upload-input')?.addEventListener('change', (e) => handleFileUpload(e.target));
 
-  // Gastos — project detail
+  // Gastos ÔÇö project detail
   $('#btn-add-gasto')?.addEventListener('click', () => openGastoModal());
   $('#modal-gasto-close')?.addEventListener('click', closeGastoModal);
   $('#modal-gasto-cancel')?.addEventListener('click', closeGastoModal);
@@ -3485,7 +3480,7 @@ async function init() {
   $('#gasto-filter-cat')?.addEventListener('change', (e) => renderGastos(APP.currentProjectId, e.target.value));
   $('#btn-export-gastos')?.addEventListener('click', exportGastosCSV);
 
-  // Gastos — global view
+  // Gastos ÔÇö global view
   $('#btn-gg-add-gasto')?.addEventListener('click', () => openGastoModal());
   $('#gg-filter-project')?.addEventListener('change', () => renderGastosGlobal(APP.currentCategory));
   $('#gg-filter-cat')?.addEventListener('change', () => renderGastosGlobal(APP.currentCategory));
@@ -3520,20 +3515,20 @@ async function init() {
   $('#modal-idea-save')?.addEventListener('click', saveIdea);
   $('#modal-idea')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeIdeaModal(); });
 
-  // Admin — User modal
+  // Admin ÔÇö User modal
   $('#btn-add-user').addEventListener('click', () => openUserModal());
   $('#modal-user-close').addEventListener('click', closeUserModal);
   $('#modal-user-cancel').addEventListener('click', closeUserModal);
   $('#modal-user-save').addEventListener('click', saveUser);
   $('#modal-user').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeUserModal(); });
 
-  // Admin — Change password modal
+  // Admin ÔÇö Change password modal
   $('#modal-chpass-close').addEventListener('click', closeChangePassModal);
   $('#modal-chpass-cancel').addEventListener('click', closeChangePassModal);
   $('#modal-chpass-save').addEventListener('click', saveNewPassword);
   $('#modal-change-pass').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeChangePassModal(); });
 
-  // Dashboard stat cards → navigate to that category's pipeline
+  // Dashboard stat cards ÔåÆ navigate to that category's pipeline
   $$('.stat-card').forEach(card => {
     card.addEventListener('click', () => {
       const cat = card.dataset.cat;
