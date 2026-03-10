@@ -27,7 +27,8 @@ const APP = {
   chart: null,
   taskViewMode: 'table', // 'table' | 'calendar'
   calendarDate: new Date(),
-  booted: false,  // evita doble bootApp() por onAuthStateChange doble disparo
+  booted: false,
+  lastCommentsRequestId: null,
 };
 
 
@@ -825,12 +826,10 @@ async function renderPipeline(category) {
               showToast('Error al cambiar etapa. Intenta de nuevo.', 'error');
             }
           });
-        }
-      };
-    }
-  });
+        };
+      }
+    });
 }
-
 
 function buildProjectCard(p, color, allTasks = []) {
   const cat = CATEGORIES[p.category] || CATEGORIES.legal;
@@ -1201,56 +1200,61 @@ function closeLocationModal() {
 
 // ── COMMENTS ─────────────────────────────────────────────────
 async function renderComments(projectId) {
-  console.group('%c 🚀 renderComments CACHE BYPASS ', 'background: #e67e22; color: #fff');
-  const targetId = String(projectId || '').trim().toLowerCase();
-  console.log('Target ID:', `"${targetId}"`);
-
-  // Siempre pedir datos frescos para descartar problemas de cache local
-  const all = await getComments(true);
-  console.log('Total comments fetched from DB:', all.length);
-
-  const comments = all.filter(c => {
-    const cid = String(c.projectId || c.project_id || '').trim().toLowerCase();
-    const match = (cid === targetId && targetId !== '' && targetId !== 'undefined' && targetId !== 'null');
-
-    // Log individual de comparación para detectar intrusos
-    if (match || all.indexOf(c) < 10) {
-      console.log(`[Filtrando] DB_ID: "${cid}" vs TARGET: "${targetId}" -> Match: ${match}`);
-    }
-    return match;
-  }).sort((a, b) => {
-    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    return dateA - dateB;
-  });
-
-  console.log('Comments result count:', comments.length);
-  console.groupEnd();
+  const requestId = uid();
+  APP.lastCommentsRequestId = requestId;
 
   const list = $('#comments-list');
-  const empty = $('#comments-empty');
-  if (!list || !empty) return;
+  if (list) list.innerHTML = '<div class="loading-spinner-small">...</div>';
 
-  if (comments.length === 0) {
-    list.innerHTML = '';
-    list.appendChild(empty);
-    empty.classList.remove('hidden');
-  } else {
-    empty.classList.add('hidden');
-    list.innerHTML = comments.map(c => `
-      <div class="comment-item" id="comment-${c.id}">
-        <div class="comment-avatar">${(c.author || 'RY').slice(0, 2).toUpperCase()}</div>
-        <div class="comment-body">
-          <div class="comment-meta">
+  console.group('%c 🚀 renderComments (Race Control) ', 'background: #e67e22; color: #fff');
+  const targetId = String(projectId || '').trim().toLowerCase();
+  console.log('Target ID:', `"${targetId}"`, 'Req ID:', requestId);
+
+  try {
+    const all = await getComments(true);
+
+    // Si esta ya no es la última petición, abortar silenciosamente
+    if (APP.lastCommentsRequestId !== requestId) {
+      console.warn('⚠️ Render cancelado: Petición obsoleta.');
+      console.groupEnd();
+      return;
+    }
+
+    const comments = all.filter(c => {
+      const cid = String(c.projectId || c.project_id || '').trim().toLowerCase();
+      return cid === targetId && targetId !== '' && targetId !== 'undefined' && targetId !== 'null';
+    }).sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateA - dateB;
+    });
+
+    if (list) list.innerHTML = '';
+    const empty = $('#comments-empty');
+    if (empty) empty.classList.toggle('hidden', comments.length > 0);
+
+    if (comments.length === 0) {
+      console.log('No comments for this project.');
+    } else {
+      comments.forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'comment-item';
+        div.innerHTML = `
+          <div class="comment-header">
             <span class="comment-author">${escHtml(c.author || 'Riesco & Asoc.')}</span>
-            <span style="display:flex;align-items:center;gap:8px">
-              <span class="comment-date">${formatDatetime(c.createdAt)}</span>
-              <button class="comment-delete" onclick="deleteComment('${c.id}')" title="Eliminar">×</button>
-            </span>
+            <span class="comment-date">${formatDatetime(c.createdAt)}</span>
+            <button class="btn-delete-comment can-edit" onclick="deleteComment('${c.id}')" title="Eliminar">✕</button>
           </div>
           <div class="comment-text">${escHtml(c.text)}</div>
-        </div>
-      </div>`).join('');
+        `;
+        list.appendChild(div);
+      });
+    }
+  } catch (err) {
+    console.error('Error in renderComments:', err);
+    if (list) list.innerHTML = '<div class="error-state">Error al cargar comentarios</div>';
+  } finally {
+    console.groupEnd();
   }
 }
 
