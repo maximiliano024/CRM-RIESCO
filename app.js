@@ -2165,8 +2165,15 @@ async function openGastoModal(gastoId = null) {
     return a.name.localeCompare(b.name);
   });
 
-  projSel.innerHTML = contextProjects
+  let optionsHtml = contextProjects
     .map(p => `<option value="${p.id}">${escHtml(p.name)}</option>`).join('');
+
+  // Asegurar que INTERNO siempre exista en el HTML, incluso si falló el seed inicial
+  if (!contextProjects.find(p => p.id === 'INTERNO')) {
+    optionsHtml = `<option value="INTERNO">INTERNO (Gasto Oficina)</option>` + optionsHtml;
+  }
+
+  projSel.innerHTML = optionsHtml;
 
   // Show/hide project selector based on context
   const pg = $('#gasto-project-group');
