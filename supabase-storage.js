@@ -356,10 +356,12 @@ async function deleteCobroById(id) {
 
 // ── COMMENTS ─────────────────────────────────────────────────
 async function getComments(force = false) {
+    console.log('getComments call - force:', force, 'cache exists:', !!window.DB_CACHE.comments);
     if (!force && window.DB_CACHE.comments) return window.DB_CACHE.comments;
     try {
         const { data, error } = await fetchWithRetry(() => _supabase.from('comments').select('*').order('created_at', { ascending: true }));
         if (error) { console.error('getComments:', error); return []; }
+        console.log('getComments data fetched:', data ? data.length : 0);
         window.DB_CACHE.comments = (data || []).map(rowToComment);
         return window.DB_CACHE.comments;
     } catch (err) { console.error('getComments failed after retries:', err); return []; }

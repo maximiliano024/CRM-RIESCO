@@ -1055,6 +1055,7 @@ async function renderFinishedProjects() {
 
 // ── PROJECT DETAIL ────────────────────────────────────────────
 async function openProjectDetail(id) {
+  console.log('--- openProjectDetail --- ID:', id);
   const projects = await getProjects();
   const p = projects.find(pr => pr.id === id);
   if (!p) return;
@@ -1200,13 +1201,29 @@ function closeLocationModal() {
 
 // ── COMMENTS ─────────────────────────────────────────────────
 async function renderComments(projectId) {
+  console.group('%c 💬 Comentarios Debug ', 'background: #222; color: #bada55');
+  const tid = String(projectId || '').trim().toLowerCase();
+  console.log('Buscando para ID:', `"${tid}"`);
+
   const all = await getComments();
-  const comments = all.filter(c => c.projectId === projectId)
-    .sort((a, b) => {
-      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return dateA - dateB;
-    });
+  console.log('Total en DB/Cache:', all.length);
+
+  const comments = all.filter(c => {
+    const cid = String(c.projectId || c.project_id || '').trim().toLowerCase();
+    const match = (cid === tid && tid !== '' && tid !== 'undefined' && tid !== 'null');
+    return match;
+  }).sort((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return dateA - dateB;
+  });
+
+  console.log('Comentarios encontrados:', comments.length);
+  if (comments.length === 0 && all.length > 0) {
+    console.warn('Alerta: Hay comentarios en DB pero ninguno coincide con este proyecto.');
+    console.log('Ejemplo de ID en DB:', `"${String(all[0].projectId || all[0].project_id || '').trim().toLowerCase()}"`);
+  }
+  console.groupEnd();
 
   const list = $('#comments-list');
   const empty = $('#comments-empty');
