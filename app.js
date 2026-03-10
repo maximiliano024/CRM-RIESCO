@@ -2221,7 +2221,9 @@ function closeGastoModal() {
 async function saveGasto() {
   const description = $('#gasto-description').value.trim();
   const amount = Number($('#gasto-amount').value);
-  const projectId = $('#gasto-project-id').value || APP.currentProjectId;
+  const projSel = $('#gasto-project-id');
+  const projectId = projSel.value || APP.currentProjectId;
+
   if (!description) { showToast('La descripción es obligatoria', 'error'); return; }
   if (!amount) { showToast('El monto debe ser mayor a 0', 'error'); return; }
   if (!projectId) { showToast('Selecciona un proyecto', 'error'); return; }
