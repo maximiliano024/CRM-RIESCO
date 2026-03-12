@@ -173,16 +173,15 @@ async function fetchWithRetry(fn, maxRetries = 3) {
 function applyAccessFilters(items, type) {
     if (!items) return [];
 
-    // Obtener el usuario activo llamando al localStorage de session
-    let currentUser = null;
-    try {
-        const storedUser = localStorage.getItem('crm_user');
-        if (storedUser) currentUser = JSON.parse(storedUser);
-    } catch (e) { }
+    // Fallback: intentar por window.APP si está inicializado
+    let currentUser = (window.APP && window.APP.currentUser) ? window.APP.currentUser : null;
 
-    // Fallback: intentar por window.APP si está inicializado (puede ser null al boot)
-    if (!currentUser && window.APP && window.APP.currentUser) {
-        currentUser = window.APP.currentUser;
+    // Si aún no lo tenemos, consultar sessionStorage (mismo que usa app.js)
+    if (!currentUser) {
+        try {
+            const storedUser = sessionStorage.getItem('crm_session');
+            if (storedUser) currentUser = JSON.parse(storedUser);
+        } catch (e) { }
     }
 
     if (!currentUser) return items;

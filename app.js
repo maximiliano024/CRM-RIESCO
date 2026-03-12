@@ -187,6 +187,7 @@ async function doLogout() {
 // ── BOOT ──────────────────────────────────────────────────────
 function bootApp(user) {
   if (!user) return;
+  APP.currentUser = user; // Set global user state for access filters
   $('#login-screen')?.classList.add('hidden');
   $('#app-shell')?.classList.remove('hidden');
 
