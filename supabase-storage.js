@@ -168,14 +168,51 @@ async function fetchWithRetry(fn, maxRetries = 3) {
     }
 }
 
+// ── ACCESS CONTROL HELPER ──────────────────────────────────────────
+// Filtra los registros según el rol y permisos del usuario conectado
+function applyAccessFilters(items, type) {
+    if (!items) return [];
+
+    // Obtener el usuario activo llamando al localStorage de session
+    let currentUser = null;
+    try {
+        const storedUser = localStorage.getItem('crm_user');
+        if (storedUser) currentUser = JSON.parse(storedUser);
+    } catch (e) { }
+
+    // Fallback: intentar por window.APP si está inicializado (puede ser null al boot)
+    if (!currentUser && window.APP && window.APP.currentUser) {
+        currentUser = window.APP.currentUser;
+    }
+
+    if (!currentUser) return items;
+
+    // Si el usuario es visualizador o admin, ver todo
+    if (currentUser.role !== 'normal') return items;
+
+    // Si es usuario 'normal', solo devolver los ítems que le pertenecen
+    if (type === 'projects') {
+        const userName = currentUser.name || '';
+        return items.filter(p => (p.responsible || '').trim().toLowerCase() === userName.trim().toLowerCase());
+    }
+    if (type === 'tareas') {
+        return items.filter(t => t.userId === currentUser.id);
+    }
+    if (type === 'gastos') {
+        return items.filter(g => g.userId === currentUser.id);
+    }
+
+    return items;
+}
+
 // ── PROJECTS ──────────────────────────────────────────────────
 async function getProjects(force = false) {
-    if (!force && window.DB_CACHE.projects) return window.DB_CACHE.projects;
+    if (!force && window.DB_CACHE.projects) return applyAccessFilters(window.DB_CACHE.projects, 'projects');
     try {
         const { data, error } = await fetchWithRetry(() => _supabase.from('projects').select('*').order('created_at', { ascending: false }));
         if (error) { console.error('getProjects:', error); return []; }
         window.DB_CACHE.projects = (data || []).map(rowToProject);
-        return window.DB_CACHE.projects;
+        return applyAccessFilters(window.DB_CACHE.projects, 'projects');
     } catch (err) { console.error('getProjects failed after retries:', err); return []; }
 }
 
@@ -248,12 +285,12 @@ async function deleteClientById(id) {
 
 // ── GASTOS ────────────────────────────────────────────────────
 async function getGastos(force = false) {
-    if (!force && window.DB_CACHE.gastos) return window.DB_CACHE.gastos;
+    if (!force && window.DB_CACHE.gastos) return applyAccessFilters(window.DB_CACHE.gastos, 'gastos');
     try {
         const { data, error } = await fetchWithRetry(() => _supabase.from('gastos').select('*').order('created_at', { ascending: false }));
         if (error) { console.error('getGastos:', error); return []; }
         window.DB_CACHE.gastos = (data || []).map(rowToGasto);
-        return window.DB_CACHE.gastos;
+        return applyAccessFilters(window.DB_CACHE.gastos, 'gastos');
     } catch (err) { console.error('getGastos failed after retries:', err); return []; }
 }
 
@@ -452,12 +489,12 @@ function tareaToRow(t) {
     };
 }
 async function getTareas(force = false) {
-    if (!force && window.DB_CACHE.tareas) return window.DB_CACHE.tareas;
+    if (!force && window.DB_CACHE.tareas) return applyAccessFilters(window.DB_CACHE.tareas, 'tareas');
     try {
         const { data, error } = await fetchWithRetry(() => _supabase.from('tareas').select('*').order('due_date', { ascending: true }));
         if (error) { console.error('getTareas:', error); return []; }
         window.DB_CACHE.tareas = (data || []).map(rowToTarea);
-        return window.DB_CACHE.tareas;
+        return applyAccessFilters(window.DB_CACHE.tareas, 'tareas');
     } catch (err) { console.error('getTareas failed after retries:', err); return []; }
 }
 async function upsertTarea(t) {

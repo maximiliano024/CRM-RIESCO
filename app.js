@@ -26,6 +26,7 @@ const APP = {
   tempLatLng: null,
   chart: null,
   taskViewMode: 'table', // 'table' | 'calendar'
+  pipelineUserFilter: 'all', // 'all' | 'mine'
   calendarDate: new Date(),
   booted: false,
   lastCommentsRequestId: null,
@@ -211,6 +212,18 @@ function bootApp(user) {
     const g = $('#nav-group-inmobiliario');
     if (g) g.style.display = 'none';
   }
+
+  // Event listener for Pipeline user filter
+  $$('#pipeline-user-filter .btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      $$('#pipeline-user-filter .btn').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      APP.pipelineUserFilter = e.target.dataset.filter;
+      if (APP.currentView === 'pipeline') {
+        renderPipeline(APP.currentCategory);
+      }
+    });
+  });
 
   // Update sidebar user info
   let roleName = 'Visualizador';
@@ -788,6 +801,13 @@ async function renderPipeline(category) {
   const user = getCurrentUser();
   const isReadOnly = !(user?.role === 'admin' || user?.role === 'normal');
   const stages = STAGES[category] || STAGES.legal;
+
+  // Sync UI buttons appearance
+  $$('#pipeline-user-filter .btn').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === (APP.pipelineUserFilter || 'all')));
+
+  if (APP.pipelineUserFilter === 'mine' && user && user.name) {
+    projects = projects.filter(p => p.responsible === user.name);
+  }
 
   const board = $('#pipeline-board');
   if (!board) return;
@@ -3411,6 +3431,41 @@ async function init() {
   if (btnMs) {
     btnMs.addEventListener('click', doLoginMicrosoft);
     console.log('Login listener attached.');
+  }
+
+  // 1.5 Local Developer Bypass (visible on localhost OR file:// protocol)
+  if (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' || window.location.protocol === 'file:') {
+    const btnBypass = document.createElement('button');
+    btnBypass.className = 'btn btn-secondary btn-full';
+    btnBypass.style.marginTop = '15px';
+    btnBypass.style.display = 'flex';
+    btnBypass.style.justifyContent = 'center';
+    btnBypass.textContent = '🛠️ Ingresar Localmente (Bypass Administrador)';
+    btnBypass.onclick = async () => {
+      // Intenta usar el primer usuario "admin" real de la BD
+      try {
+        const users = await getUsers();
+        const adminUser = users.find(u => u.role === 'admin');
+        if (adminUser) {
+          setCurrentUser(adminUser);
+          bootApp(adminUser);
+        } else {
+          // Fallback si no hay admin
+          const devUser = {
+            id: 'user-dev-local-admin',
+            username: 'dev@local',
+            name: 'Usuario Admin Prueba',
+            role: 'admin',
+            access: ['legal', 'inmobiliario']
+          };
+          setCurrentUser(devUser);
+          bootApp(devUser);
+        }
+      } catch (e) { console.error('Bypass error', e) }
+    };
+    if (btnMs && btnMs.parentNode) {
+      btnMs.parentNode.appendChild(btnBypass);
+    }
   }
 
   // 2. Auth State Change Listener
