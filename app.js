@@ -680,8 +680,9 @@ async function saveProject() {
       const projects = await getProjects();
       const old = projects.find(p => p.id === APP.editingProjectId) || {};
       data.id = APP.editingProjectId;
-      data.lat = (data.address !== old.address) ? null : old.lat;
-      data.lng = (data.address !== old.address) ? null : old.lng;
+      const oldAddress = (old.address || \\).trim();
+      data.lat = (data.address !== oldAddress) ? null : old.lat;
+      data.lng = (data.address !== oldAddress) ? null : old.lng;
       ok = await upsertProject(data);
       if (ok !== true) { showToast('Error Editando: ' + (ok?.message || 'Revisa consola'), 'error'); return; }
       showToast('Proyecto actualizado', 'success');
