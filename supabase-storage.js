@@ -21,8 +21,22 @@ window.invalidateCache = (key) => {
 function rowToProject(r) {
     // Normalize responsible: DB may return text[] array or legacy single string
     let responsible = r.responsible;
-    if (!Array.isArray(responsible)) {
-        responsible = (responsible && responsible !== '') ? [responsible] : [];
+    if (typeof responsible === 'string') {
+        try {
+            if (responsible.startsWith('[') && responsible.endsWith(']')) {
+                responsible = JSON.parse(responsible);
+            } else if (responsible.startsWith('{') && responsible.endsWith('}')) {
+                responsible = responsible.slice(1, -1).split(',').map(s => s.replace(/(^"|"$)/g, '').trim());
+            } else if (responsible.includes(',')) {
+                responsible = responsible.split(',').map(s => s.trim());
+            } else {
+                responsible = responsible !== '' ? [responsible] : [];
+            }
+        } catch {
+            responsible = responsible !== '' ? [responsible] : [];
+        }
+    } else if (!Array.isArray(responsible)) {
+        responsible = (responsible != null && responsible !== '') ? [responsible] : [];
     }
     return {
         id: r.id, name: r.name, client: r.client,
