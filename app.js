@@ -35,10 +35,9 @@ const APP = {
 
 const STAGES = {
   legal: [
-    { id: 'en-contacto', label: 'En Contacto', color: '#3b82f6' },
-    { id: 'evaluacion', label: 'Evaluación', color: '#8b5cf6' },
-    { id: 'en-negociacion', label: 'En Negociación', color: '#f59e0b' },
-    { id: 'cierre', label: 'Cierre', color: '#10b981' },
+    { id: 'asignacion', label: 'Asignación', color: '#3b82f6' },
+    { id: 'ejecucion', label: 'Ejecución', color: '#f59e0b' },
+    { id: 'entrega', label: 'Entrega', color: '#10b981' },
   ],
   inmobiliario: [
     { id: 'en-contacto', label: 'En Contacto', color: '#3b82f6' },
@@ -486,10 +485,17 @@ async function openProjectModal(projectId = null, defaultStage = null) {
   sel.innerHTML = '<option value="">— Seleccionar empresa —</option>' +
     clients.map(c => `<option value="${escHtml(c.name)}">${escHtml(c.name)}</option>`).join('');
 
-  // Populate responsible dropdown with registered users
-  const respSel = $('#input-responsible');
-  respSel.innerHTML = '<option value="">— Seleccionar responsable —</option>' +
-    users.map(u => `<option value="${escHtml(u.name)}">${escHtml(u.name)}</option>`).join('');
+  // Populate responsible checkboxes with registered users
+  const renderResponsibleCheckboxes = (selectedNames) => {
+    const container = $('#responsible-dropdown');
+    if (!container) return;
+    container.innerHTML = users.map(u => {
+      const checked = selectedNames.has(u.name) ? 'checked' : '';
+      return `<label class="checkbox-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px;width:100%;"><input type="checkbox" name="responsible" value="${escHtml(u.name)}" ${checked} onchange="updateResponsibleSummary()"> <span>${escHtml(u.name)}</span></label>`;
+    }).join('');
+    updateResponsibleSummary();
+    toggleResponsibleDropdown(true); // Close it explicitly when modal opens
+  };
 
   if (projectId) {
     const projects = await getProjects();
@@ -513,11 +519,9 @@ async function openProjectModal(projectId = null, defaultStage = null) {
 
     $('#input-value').value = p.value || '';
     $('#input-date').value = p.date || '';
-    // If the stored responsible name isn't in the users list, add it as a legacy option
-    if (p.responsible && !users.find(u => u.name === p.responsible)) {
-      respSel.innerHTML += `<option value="${escHtml(p.responsible)}">${escHtml(p.responsible)} (legado)</option>`;
-    }
-    $('#input-responsible').value = p.responsible || '';
+    // Pre-check already assigned responsibles
+    const currentResponsibles = new Set(Array.isArray(p.responsible) ? p.responsible : (p.responsible ? [p.responsible] : []));
+    renderResponsibleCheckboxes(currentResponsibles);
     $('#input-address').value = p.address || '';
     $('#input-description').value = p.description || '';
     if (p.coverDataUrl) {
@@ -539,7 +543,7 @@ async function openProjectModal(projectId = null, defaultStage = null) {
 
     $('#input-value').value = '';
     $('#input-date').value = today();
-    $('#input-responsible').value = '';
+    renderResponsibleCheckboxes(new Set()); // no pre-selection for new project
     $('#input-address').value = '';
     $('#input-description').value = '';
   }
@@ -664,7 +668,7 @@ async function saveProject() {
     stage: $('#input-stage').value,
     value: Number($('#input-value').value) || 0,
     date: $('#input-date').value,
-    responsible: $('#input-responsible').value.trim(),
+    responsible: [...document.querySelectorAll('#responsible-dropdown input[name="responsible"]:checked')].map(el => el.value),
     address: $('#input-address').value.trim(),
     description: $('#input-description').value.trim(),
     coverDataUrl: APP.coverDataUrl || null,
@@ -807,7 +811,7 @@ async function renderPipeline(category) {
   $$('#pipeline-user-filter .btn').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === (APP.pipelineUserFilter || 'all')));
 
   if (APP.pipelineUserFilter === 'mine' && user && user.name) {
-    projects = projects.filter(p => p.responsible === user.name);
+    projects = projects.filter(p => Array.isArray(p.responsible) && p.responsible.includes(user.name));
   }
 
   const board = $('#pipeline-board');
@@ -1142,12 +1146,12 @@ async function openProjectDetail(id) {
     { label: 'Cliente', value: p.client },
     { label: 'Categoría', value: `${cat.icon} ${cat.label}` },
     { label: 'Etapa', value: stage.label },
-    { label: 'Responsable', value: p.responsible || '—' },
+    { label: 'Responsable(s)', value: (Array.isArray(p.responsible) && p.responsible.length) ? p.responsible.join(', ') : (p.responsible || '—') },
     { label: 'Fecha de inicio', value: p.date ? formatDate(p.date) : '—' },
     { label: 'Valor', value: p.value ? formatCLP(p.value) : '—' },
     { label: 'Dirección', value: p.address || '—' },
     { label: 'Descripción', value: p.description || '—' },
-  ].map(i => `<div class="info-item"><span class="info-label">${i.label}</span><span class="info-value">${escHtml(String(i.value))}</span></div>`).join('');
+  ].map(i => `<div class="info-item"><span class="info-label">${i.label}</span><span class="info-value">${i.isHtml ? i.value : escHtml(String(i.value))}</span></div>`).join('');
 
   $('#tab-btn-tareas').style.display = p.category === 'inmobiliario' ? '' : 'none';
 
@@ -1428,11 +1432,22 @@ async function renderFiles(projectId) {
   } else {
     if (empty) empty.classList.add('hidden');
     const cardsHtml = files.map(f => {
-      const { icon, bg } = getFileIcon(f.name);
-      return `<div class="file-card" title="${escHtml(f.name)}" onclick="openLightboxFile('${f.id}')" style="cursor:pointer;">
+      let icon = '📎', bg = 'rgba(156,163,175,0.15)', clickAction = `openLightboxFile('${f.id}')`;
+      
+      if (f.type === 'link') {
+        icon = '☁️';
+        bg = 'rgba(14,165,233,0.15)'; // nice blue for cloud
+        clickAction = `window.open('${escHtml(f.dataUrl)}', '_blank')`;
+      } else {
+        const iconData = getFileIcon(f.name);
+        icon = iconData.icon;
+        bg = iconData.bg;
+      }
+
+      return `<div class="file-card" title="${escHtml(f.name)}" onclick="${clickAction}" style="cursor:pointer;">
         <div class="file-icon" style="background:${bg}">${icon}</div>
         <div class="file-name">${escHtml(f.name)}</div>
-        <div class="file-size">${formatSize(f.size)}</div>
+        <div class="file-size">${f.type === 'link' ? 'Enlace' : formatSize(f.size)}</div>
         <button class="file-delete can-edit" onclick="event.stopPropagation(); deleteFile('${f.id}')" title="Eliminar">×</button>
       </div>`;
     }).join('');
@@ -1441,6 +1456,45 @@ async function renderFiles(projectId) {
     grid.insertAdjacentHTML('beforeend', cardsHtml);
   }
 }
+
+// ── CLOUD LINKS ───────────────────────────────────────────────
+function openCloudLinkModal() {
+  $('#link-cloud-name').value = '';
+  $('#link-cloud-url').value = '';
+  $('#modal-link-cloud').classList.remove('hidden');
+  setTimeout(() => $('#link-cloud-name').focus(), 100);
+}
+
+function closeCloudLinkModal() {
+  $('#modal-link-cloud').classList.add('hidden');
+}
+
+async function saveCloudLink() {
+  const name = $('#link-cloud-name').value.trim();
+  const url = $('#link-cloud-url').value.trim();
+  const projectId = APP.currentProjectId;
+
+  if (!name) { showToast('El nombre es obligatorio', 'error'); return; }
+  if (!url) { showToast('El enlace es obligatorio', 'error'); return; }
+  if (!projectId) return;
+
+  const linkFile = {
+    id: crypto.randomUUID(),
+    projectId: projectId,
+    name: name,
+    size: 0,
+    type: 'link',
+    dataUrl: url,
+    createdAt: new Date().toISOString()
+  };
+
+  showToast('Guardando enlace...');
+  await upsertFile(linkFile);
+  showToast('Enlace guardado', 'success');
+  closeCloudLinkModal();
+  renderFiles(projectId);
+}
+// ──────────────────────────────────────────────────────────────
 
 async function handleFileUpload(input) {
   const fileList = Array.from(input.files);
@@ -3771,3 +3825,36 @@ async function init() {
 
 
 document.addEventListener('DOMContentLoaded', init);
+
+// ── CUSTOM DROPDOWN LOGIC ───────────────────────────────────────
+let isResponsibleDropdownOpen = false;
+window.toggleResponsibleDropdown = function(forceClose = false) {
+  const dd = document.getElementById('responsible-dropdown');
+  if (!dd) return;
+  if (forceClose || !dd.classList.contains('hidden')) {
+    dd.classList.add('hidden');
+    isResponsibleDropdownOpen = false;
+  } else {
+    dd.classList.remove('hidden');
+    isResponsibleDropdownOpen = true;
+  }
+}
+
+window.updateResponsibleSummary = function() {
+  const checked = document.querySelectorAll('#responsible-dropdown input[type="checkbox"]:checked');
+  const summary = document.getElementById('cms-summary');
+  if (!summary) return;
+  if (checked.length === 0) {
+    summary.textContent = 'Seleccionar responsables...';
+  } else if (checked.length === 1) {
+    summary.textContent = checked[0].value;
+  } else {
+    summary.textContent = `${checked.length} seleccionados`;
+  }
+}
+
+document.addEventListener('click', (e) => {
+  if (isResponsibleDropdownOpen && !e.target.closest('#responsible-select-container')) {
+    window.toggleResponsibleDropdown(true);
+  }
+});

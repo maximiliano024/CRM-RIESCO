@@ -556,14 +556,22 @@
             <div class="card">
               <div class="card-header">
                 <h3 class="card-title">Archivos Adjuntos</h3>
-                <label class="btn btn-primary btn-sm can-edit" for="file-upload-input">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="17 8 12 3 7 8" />
-                    <line x1="12" y1="3" x2="12" y2="15" />
-                  </svg>Subir Archivo
-                </label>
-                <input type="file" id="file-upload-input" multiple style="display:none" />
+                <div style="display:flex;gap:8px;">
+                  <button class="btn btn-secondary btn-sm can-edit" id="btn-add-cloud-link" onclick="openCloudLinkModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px">
+                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                    </svg>Enlazar Archivo
+                  </button>
+                  <label class="btn btn-primary btn-sm can-edit" for="file-upload-input">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>Subir Archivo
+                  </label>
+                  <input type="file" id="file-upload-input" multiple style="display:none" />
+                </div>
               </div>
               <div class="card-body">
                 <div class="files-grid" id="files-grid">
@@ -1186,10 +1194,17 @@
               class="form-input" id="input-value" placeholder="0" /></div>
           <div class="form-group"><label class="form-label" for="input-date">Fecha de Inicio</label><input type="date"
               class="form-input" id="input-date" /></div>
-          <div class="form-group"><label class="form-label" for="input-responsible">Responsable</label>
-            <select class="form-input" id="input-responsible">
-              <option value="">— Seleccionar responsable —</option>
-            </select>
+          <div class="form-group" style="position:relative;">
+            <label class="form-label">Responsable(s)</label>
+            <div class="custom-multi-select" id="responsible-select-container">
+              <div class="cms-header" onclick="toggleResponsibleDropdown()">
+                <span id="cms-summary">Seleccionar responsables...</span>
+                <span class="cms-chevron">▼</span>
+              </div>
+              <div class="cms-dropdown hidden" id="responsible-dropdown">
+                <!-- Javascript will populate checkboxes here -->
+              </div>
+            </div>
           </div>
           <div class="form-group full-width"><label class="form-label" for="input-address">Dirección</label><input
               type="text" class="form-input" id="input-address" placeholder="Ej: Av. Providencia 1234, Santiago" />
@@ -1331,6 +1346,30 @@
       </div>
       <div class="modal-footer"><button class="btn btn-ghost" id="modal-client-cancel">Cancelar</button><button
           class="btn btn-primary" id="modal-client-save">Guardar Cliente</button></div>
+    </div>
+  </div>
+
+  <!-- MODAL: ENLAZAR ARCHIVO NUBE -->
+  <div class="modal-overlay hidden" id="modal-link-cloud">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h2 class="modal-title">Enlazar Archivo Nube</h2>
+        <button class="modal-close" onclick="closeCloudLinkModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="link-cloud-name">Nombre del Archivo *</label>
+          <input type="text" class="form-input" id="link-cloud-name" placeholder="Ej: Contrato Arriendo V2.pdf" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="link-cloud-url">Enlace (OneDrive, GDrive, etc) *</label>
+          <input type="url" class="form-input" id="link-cloud-url" placeholder="https://..." />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeCloudLinkModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveCloudLink()">Guardar Enlace</button>
+      </div>
     </div>
   </div>
 

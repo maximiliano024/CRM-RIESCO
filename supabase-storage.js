@@ -19,12 +19,17 @@ window.invalidateCache = (key) => {
 // ── HELPERS ──────────────────────────────────────────────────
 // Convierte snake_case de Postgres → camelCase de la app
 function rowToProject(r) {
+    // Normalize responsible: DB may return text[] array or legacy single string
+    let responsible = r.responsible;
+    if (!Array.isArray(responsible)) {
+        responsible = (responsible && responsible !== '') ? [responsible] : [];
+    }
     return {
         id: r.id, name: r.name, client: r.client,
         category: r.category, stage: r.stage,
         subcategory: r.subcategory || null,
         value: r.value, date: r.date,
-        responsible: r.responsible, address: r.address,
+        responsible, address: r.address,
         description: r.description, lat: r.lat, lng: r.lng,
         coverDataUrl: r.cover_data_url || null,
         createdAt: r.created_at,
@@ -36,7 +41,7 @@ function projectToRow(p) {
         category: p.category, stage: p.stage,
         subcategory: p.subcategory || null,
         value: p.value || 0, date: p.date || null,
-        responsible: p.responsible || null, address: p.address || null,
+        responsible: Array.isArray(p.responsible) ? p.responsible : [], address: p.address || null,
         description: p.description || null, lat: p.lat || null, lng: p.lng || null,
         cover_data_url: p.coverDataUrl || null,
     };
@@ -191,8 +196,11 @@ function applyAccessFilters(items, type) {
 
     // Si es usuario 'normal', solo devolver los ítems que le pertenecen
     if (type === 'projects') {
-        const userName = currentUser.name || '';
-        return items.filter(p => (p.responsible || '').trim().toLowerCase() === userName.trim().toLowerCase());
+        const userName = (currentUser.name || '').trim().toLowerCase();
+        return items.filter(p => {
+            const responsibles = Array.isArray(p.responsible) ? p.responsible : [];
+            return responsibles.some(r => r.trim().toLowerCase() === userName);
+        });
     }
     if (type === 'tareas') {
         return items.filter(t => t.userId === currentUser.id);
