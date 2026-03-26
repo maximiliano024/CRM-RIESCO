@@ -188,6 +188,16 @@
           <span>Proyectos Terminados</span>
         </a>
 
+        <!-- PROYECTOS ARCHIVADOS (ADMIN ONLY) -->
+        <a href="#" class="nav-item nav-admin-only" data-view="archived-projects" id="nav-archived-projects">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="21 8 21 21 3 21 3 8"></polyline>
+            <rect x="1" y="3" width="22" height="5"></rect>
+            <line x1="10" y1="12" x2="14" y2="12"></line>
+          </svg>
+          <span>Proyectos Archivados</span>
+        </a>
+
         <!-- ADMIN -->
         <a href="#" class="nav-item nav-admin-only" data-view="admin" id="nav-admin">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -516,6 +526,7 @@
           </div>
           <div class="project-hero-actions">
             <button class="btn btn-secondary can-edit" id="btn-edit-project">Editar Proyecto</button>
+            <button class="btn btn-warning can-edit" id="btn-archive-project" style="background-color: var(--warning); color: white;" onclick="archiveProject(APP.currentProjectId)">Archivar</button>
             <button class="btn btn-success" id="btn-send-billing-detail"
               style="background-color:var(--success);color:white">Terminar y enviar a cobro</button>
             <button class="btn btn-danger can-edit" id="btn-delete-project">Eliminar</button>
@@ -1024,6 +1035,40 @@
             <div id="finished-projects-empty" class="empty-state hidden">
               <div class="empty-icon">📁</div>
               <p>No hay proyectos terminados aún.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── VIEW: ARCHIVED PROJECTS ── -->
+      <section id="view-archived-projects" class="view hidden">
+        <div class="view-header">
+          <div class="header-main">
+            <h1 class="view-title">Proyectos Archivados</h1>
+            <p class="view-subtitle">Histórico de proyectos no llevados a cabo o cancelados</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-container">
+            <table class="table" id="archived-projects-table">
+              <thead>
+                <tr>
+                  <th>Proyecto</th>
+                  <th>Categoría</th>
+                  <th>Cliente</th>
+                  <th>Fecha Registro</th>
+                  <th>Monto</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="archived-projects-body">
+                <!-- Rendered via JS -->
+              </tbody>
+            </table>
+            <div id="archived-projects-empty" class="empty-state hidden">
+              <div class="empty-icon">🗄️</div>
+              <p>No hay proyectos archivados aún.</p>
             </div>
           </div>
         </div>

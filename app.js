@@ -290,8 +290,8 @@ async function showView(viewId, title, category) {
     $('#nav-inmo-ideas')?.classList.add('active');
   } else if (viewId === 'finished-projects') {
     $('#nav-finished-projects')?.classList.add('active');
-  } else if (viewId === 'finished-projects') {
-    $('#nav-finished-projects')?.classList.add('active');
+  } else if (viewId === 'archived-projects') {
+    $('#nav-archived-projects')?.classList.add('active');
   } else if (viewId === 'project-detail') {
     // keep whichever was previously active
   }
@@ -312,6 +312,8 @@ async function showView(viewId, title, category) {
   if (viewId === 'tareas') await renderTareas(category);
   if (viewId === 'ideas') await renderIdeasTable();
   if (viewId === 'finished-projects') await renderFinishedProjects();
+  if (viewId === 'archived-projects') await renderArchivedProjects();
+  if (viewId === 'archived-projects') await renderArchivedProjects();
 }
 
 // ── SIDEBAR COLLAPSIBLE GROUPS ────────────────────────────────
@@ -717,6 +719,7 @@ function refreshCurrentView() {
   else if (v === 'projects') renderProjectsTable(c);
   else if (v === 'project-detail') openProjectDetail(APP.currentProjectId);
   else if (v === 'finished-projects') renderFinishedProjects();
+  else if (v === 'archived-projects') renderArchivedProjects();
   else if (v === 'admin') renderAdminPanel();
 }
 
@@ -803,7 +806,7 @@ function renderPipelineChart(projects) {
 
 async function renderPipeline(category) {
   const [allProjects, allTasks] = await Promise.all([getProjects(), getTareas()]);
-  let projects = allProjects.filter(p => p.category === category && p.stage !== 'terminado');
+  let projects = allProjects.filter(p => p.category === category && p.stage !== 'terminado' && p.stage !== 'archivado');
   const user = getCurrentUser();
   const isReadOnly = !(user?.role === 'admin' || user?.role === 'normal');
   const stages = STAGES[category] || STAGES.legal;
@@ -913,7 +916,7 @@ function onDragEnd(e) { e.currentTarget.classList.remove('dragging'); }
 // ── PROJECTS TABLE ────────────────────────────────────────────
 async function renderProjectsTable(category, filter = '') {
   const [allProjects, allTasks] = await Promise.all([getProjects(), getTareas()]);
-  const projectsAtivo = allProjects.filter(p => p.stage !== 'terminado');
+  const projectsAtivo = allProjects.filter(p => p.stage !== 'terminado' && p.stage !== 'archivado');
   // ... (the rest of filtering logic below should use projectsAtivo)
 
   // Aplicar nuevos filtros
@@ -3859,3 +3862,47 @@ document.addEventListener('click', (e) => {
     window.toggleResponsibleDropdown(true);
   }
 });
+
+
+// ── ARCHIVED PROJECTS ──────────────────────────────────────────
+async function renderArchivedProjects() {
+  const allProjects = await getProjects();
+  const archived = allProjects.filter(p => p.stage === 'archivado');
+
+  const tbody = $('#archived-projects-body');
+  const empty = $('#archived-projects-empty');
+
+  if (archived.length === 0) {
+    if (tbody) tbody.innerHTML = '';
+    if (empty) empty.classList.remove('hidden');
+    return;
+  }
+  if (empty) empty.classList.add('hidden');
+
+  if (tbody) tbody.innerHTML = archived.map(p => {
+    const cat = CATEGORIES[p.category] || { label: p.category, icon: '' };
+    return `<tr>
+      <td style="font-weight:600;color:var(--text-primary);cursor:pointer" onclick="openProjectDetail('${p.id}')">
+        ${escHtml(p.name)}
+      </td>
+      <td>${cat.icon} ${cat.label}</td>
+      <td>${escHtml(p.client)}</td>
+      <td>${p.createdAt ? formatDate(p.createdAt.split('T')[0]) : '—'}</td>
+      <td><strong>${formatCLP(p.value)}</strong></td>
+      <td>
+        <button class="btn btn-sm btn-ghost" onclick="openProjectDetail('${p.id}')">Ver Detalle</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function archiveProject(id) {
+  if (!confirm('¿Archivar este proyecto? Dejará de aparecer en la vista activa.')) return;
+  const ok = await updateProjectStage(id, 'archivado');
+  if (ok) {
+    showToast('Proyecto archivado', 'info');
+    showView('archived-projects', 'Proyectos Archivados');
+  } else {
+    showToast('Error al archivar el proyecto', 'error');
+  }
+}
