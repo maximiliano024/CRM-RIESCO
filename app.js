@@ -2322,14 +2322,16 @@ async function saveGasto() {
     data.id = APP.editingGastoId;
     // We do NOT overwrite the original creator in edit, just in case. 
     // Usually handled seamlessly by Supabase upsert unless we explicitly null it.
-    await upsertGasto(data);
+    const res = await upsertGasto(data);
+    if (res !== true) { showToast('Error al actualizar: ' + (res?.message || 'Error desconocido'), 'error'); return; }
     showToast('Gasto actualizado', 'success');
   } else {
     data.id = uid();
     data.createdAt = new Date().toISOString();
     data.userId = currentUser?.id || null;
     data.userName = currentUser?.name || null;
-    await upsertGasto(data);
+    const res = await upsertGasto(data);
+    if (res !== true) { showToast('Error al registrar: ' + (res?.message || 'Error desconocido'), 'error'); return; }
     showToast('Gasto registrado', 'success');
   }
   closeGastoModal();

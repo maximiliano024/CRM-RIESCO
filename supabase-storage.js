@@ -322,7 +322,8 @@ async function upsertGasto(g) {
         else window.DB_CACHE.gastos.unshift(g);
     }
     const { error } = await _supabase.from('gastos').upsert(gastoToRow(g), { onConflict: 'id' });
-    if (error) { console.error('upsertGasto:', error); window.DB_CACHE.gastos = null; }
+    if (error) { console.error('upsertGasto:', error); window.DB_CACHE.gastos = null; return error; }
+    return true;
 }
 
 async function deleteGastoById(id) {
