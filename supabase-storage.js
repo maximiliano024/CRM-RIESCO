@@ -212,6 +212,7 @@ function applyAccessFilters(items, type) {
     if (type === 'projects') {
         const userName = (currentUser.name || '').trim().toLowerCase();
         return items.filter(p => {
+            if (p.id === 'INTERNO') return true;
             const responsibles = Array.isArray(p.responsible) ? p.responsible : [];
             return responsibles.some(r => r.trim().toLowerCase() === userName);
         });
