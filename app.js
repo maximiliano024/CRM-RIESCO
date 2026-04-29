@@ -1808,14 +1808,21 @@ async function renderGastosGlobal(category) {
   const canEdit = isAdmin || user?.role === 'normal';
 
   // Load data
-  const allProjects = await getProjects();
-  const projects = category ? allProjects.filter(p => p.category === category || p.id === 'INTERNO') : allProjects;
+  // Obtenemos todos los proyectos sin filtro para mapear los nombres correctamente
+  const allProjectsRaw = window.DB_CACHE.projects || await getProjects(true);
   const projectMap = {};
-  projects.forEach(p => { projectMap[p.id] = p.name; });
+  allProjectsRaw.forEach(p => { projectMap[p.id] = p.name; });
 
-  let gastos = (await getGastos()).filter(g => projects.some(p => p.id === g.projectId));
-  if (!isAdmin) {
-    gastos = gastos.filter(g => g.userId === user?.id);
+  let gastos = await getGastos();
+  
+  if (category) {
+    // Filtrar por la categoría actual, o si es un gasto interno
+    gastos = gastos.filter(g => {
+      // Usar la categoría del proyecto si existe en raw, sino la categoría guardada en el gasto
+      const p = allProjectsRaw.find(x => x.id === g.projectId);
+      const cat = p ? p.category : g.category;
+      return cat === category || g.projectId === 'INTERNO';
+    });
   }
 
   // Save state
