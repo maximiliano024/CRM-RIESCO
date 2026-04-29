@@ -144,6 +144,7 @@ async function seedInternoProject() {
   await upsertProject({
     id: 'INTERNO',
     name: 'INTERNO (Gasto Oficina)',
+    client: 'Oficina Interna',
     category: 'oficina',
     stage: 'cierre', // Etapa genérica para que no moleste en pipelines
     description: 'Proyecto genérico para gastos internos de la oficina.',
