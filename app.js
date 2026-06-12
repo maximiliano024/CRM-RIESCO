@@ -3596,6 +3596,7 @@ async function init() {
 
   // Sidebar toggle (mobile)
   $('#sidebar-toggle')?.addEventListener('click', () => $('#sidebar').classList.toggle('open'));
+  $('#sidebar-close')?.addEventListener('click', () => $('#sidebar').classList.remove('open'));
 
   // Sidebar nav items (with category)
   $$('.nav-item[data-view]').forEach(item => {
@@ -3605,6 +3606,9 @@ async function init() {
       const cat = item.dataset.category || null;
       const titles = { dashboard: 'Dashboard', pipeline: 'Pipeline', projects: 'Proyectos', admin: 'Administrador' };
       showView(view, titles[view] || view, cat);
+      if (window.innerWidth <= 768) {
+        $('#sidebar').classList.remove('open');
+      }
     });
   });
 
