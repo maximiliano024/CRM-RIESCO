@@ -1102,6 +1102,28 @@ async function renderFinishedProjects() {
   }).join('');
 }
 
+async function navigateProject(direction) {
+  if (!APP.currentProjectId) return;
+  const projects = await getProjects();
+  const user = getCurrentUser();
+  const accessible = user?.access || ['legal', 'inmobiliario'];
+  
+  let list = projects.filter(p => p.stage !== 'archivado' && p.stage !== 'terminado' && accessible.includes(p.category));
+  if (APP.currentCategory) {
+    list = list.filter(p => p.category === APP.currentCategory);
+  }
+  
+  list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  
+  const idx = list.findIndex(p => p.id === APP.currentProjectId);
+  if (idx === -1) return;
+  
+  let newIdx = idx + direction;
+  if (newIdx < 0) newIdx = list.length - 1;
+  if (newIdx >= list.length) newIdx = 0;
+  
+  openProjectDetail(list[newIdx].id);
+}
 // ── PROJECT DETAIL ────────────────────────────────────────────
 async function openProjectDetail(id) {
   console.log('--- openProjectDetail --- ID:', id);
@@ -3633,6 +3655,11 @@ async function init() {
     const title = cat && CATEGORIES[cat] ? CATEGORIES[cat].label : 'Proyectos';
     showView('projects', title, cat);
   });
+
+  // Project navigation
+  $('#btn-prev-project')?.addEventListener('click', () => navigateProject(1));
+  $('#btn-next-project')?.addEventListener('click', () => navigateProject(-1));
+
 
   // Edit/Delete project
   $('#btn-edit-project')?.addEventListener('click', () => openProjectModal(APP.currentProjectId));

@@ -512,11 +512,25 @@
 
       <!-- ── VIEW: PROJECT DETAIL ── -->
       <section class="view hidden" id="view-project-detail">
-        <button class="btn btn-ghost back-btn" id="btn-back">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>Volver
-        </button>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <button class="btn btn-ghost back-btn" id="btn-back" style="margin-bottom: 0;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>Volver
+          </button>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary btn-sm" id="btn-prev-project" title="Proyecto Anterior">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+            <button class="btn btn-secondary btn-sm" id="btn-next-project" title="Siguiente Proyecto">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          </div>
+        </div>
         <div class="project-hero">
           <div class="project-hero-info">
             <div class="hero-badges">
