@@ -1107,21 +1107,21 @@ async function navigateProject(direction) {
   const projects = await getProjects();
   const user = getCurrentUser();
   const accessible = user?.access || ['legal', 'inmobiliario'];
-  
+
   let list = projects.filter(p => p.stage !== 'archivado' && p.stage !== 'terminado' && accessible.includes(p.category));
   if (APP.currentCategory) {
     list = list.filter(p => p.category === APP.currentCategory);
   }
-  
+
   list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
-  
+
   const idx = list.findIndex(p => p.id === APP.currentProjectId);
   if (idx === -1) return;
-  
+
   let newIdx = idx + direction;
   if (newIdx < 0) newIdx = list.length - 1;
   if (newIdx >= list.length) newIdx = 0;
-  
+
   openProjectDetail(list[newIdx].id);
 }
 // ── PROJECT DETAIL ────────────────────────────────────────────
@@ -1151,6 +1151,17 @@ async function openProjectDetail(id) {
   const catBadge = $('#detail-cat-badge');
   catBadge.textContent = `${cat.icon} ${cat.label}`;
   catBadge.className = `cat-badge ${p.category}`;
+
+  // Botones de Archivar / Desarchivar
+  const btnArchive = $('#btn-archive-project');
+  const btnUnarchive = $('#btn-unarchive-project');
+  if (p.stage === 'archivado') {
+    if (btnArchive) btnArchive.classList.add('hidden');
+    if (btnUnarchive) btnUnarchive.classList.remove('hidden');
+  } else {
+    if (btnArchive) btnArchive.classList.remove('hidden');
+    if (btnUnarchive) btnUnarchive.classList.add('hidden');
+  }
 
   // Cover photo logic
   const hero = $('.project-hero');
@@ -1460,7 +1471,7 @@ async function renderFiles(projectId) {
     if (empty) empty.classList.add('hidden');
     const cardsHtml = files.map(f => {
       let icon = '📎', bg = 'rgba(156,163,175,0.15)', clickAction = `openLightboxFile('${f.id}')`;
-      
+
       if (f.type === 'link') {
         icon = '☁️';
         bg = 'rgba(14,165,233,0.15)'; // nice blue for cloud
@@ -1836,7 +1847,7 @@ async function renderGastosGlobal(category) {
   allProjectsRaw.forEach(p => { projectMap[p.id] = p.name; });
 
   let gastos = await getGastos();
-  
+
   if (category) {
     // Filtrar por la categoría actual, o si es un gasto interno
     gastos = gastos.filter(g => {
@@ -3873,7 +3884,7 @@ document.addEventListener('DOMContentLoaded', init);
 
 // ── CUSTOM DROPDOWN LOGIC ───────────────────────────────────────
 let isResponsibleDropdownOpen = false;
-window.toggleResponsibleDropdown = function(forceClose = false) {
+window.toggleResponsibleDropdown = function (forceClose = false) {
   const dd = document.getElementById('responsible-dropdown');
   if (!dd) return;
   if (forceClose || !dd.classList.contains('hidden')) {
@@ -3885,7 +3896,7 @@ window.toggleResponsibleDropdown = function(forceClose = false) {
   }
 }
 
-window.updateResponsibleSummary = function() {
+window.updateResponsibleSummary = function () {
   const checked = document.querySelectorAll('#responsible-dropdown input[type="checkbox"]:checked');
   const summary = document.getElementById('cms-summary');
   if (!summary) return;
@@ -3945,5 +3956,16 @@ async function archiveProject(id) {
     showView('archived-projects', 'Proyectos Archivados');
   } else {
     showToast('Error al archivar el proyecto', 'error');
+  }
+}
+
+async function unarchiveProject(id) {
+  if (!confirm('¿Desarchivar este proyecto? Volverá a aparecer como activo.')) return;
+  const ok = await updateProjectStage(id, 'en-contacto');
+  if (ok) {
+    showToast('Proyecto desarchivado', 'success');
+    showView('projects', 'Proyectos');
+  } else {
+    showToast('Error al desarchivar el proyecto', 'error');
   }
 }

@@ -520,12 +520,14 @@
           </button>
           <div style="display: flex; gap: 8px;">
             <button class="btn btn-secondary btn-sm" id="btn-prev-project" title="Proyecto Anterior">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                style="width: 16px; height: 16px;">
                 <polyline points="15 18 9 12 15 6" />
               </svg>
             </button>
             <button class="btn btn-secondary btn-sm" id="btn-next-project" title="Siguiente Proyecto">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                style="width: 16px; height: 16px;">
                 <polyline points="9 18 15 12 9 6" />
               </svg>
             </button>
@@ -546,7 +548,12 @@
           </div>
           <div class="project-hero-actions">
             <button class="btn btn-secondary can-edit" id="btn-edit-project">Editar Proyecto</button>
-            <button class="btn btn-warning can-edit" id="btn-archive-project" style="background-color: var(--warning); color: white;" onclick="archiveProject(APP.currentProjectId)">Archivar</button>
+            <button class="btn btn-warning can-edit" id="btn-archive-project"
+              style="background-color: var(--warning); color: white;"
+              onclick="archiveProject(APP.currentProjectId)">Archivar</button>
+            <button class="btn btn-primary can-edit hidden" id="btn-unarchive-project"
+              style="background-color: var(--primary); color: white;"
+              onclick="unarchiveProject(APP.currentProjectId)">Desarchivar</button>
             <button class="btn btn-success" id="btn-send-billing-detail"
               style="background-color:var(--success);color:white">Terminar y enviar a cobro</button>
             <button class="btn btn-danger can-edit" id="btn-delete-project">Eliminar</button>
@@ -588,8 +595,10 @@
               <div class="card-header">
                 <h3 class="card-title">Archivos Adjuntos</h3>
                 <div style="display:flex;gap:8px;">
-                  <button class="btn btn-secondary btn-sm can-edit" id="btn-add-cloud-link" onclick="openCloudLinkModal()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px">
+                  <button class="btn btn-secondary btn-sm can-edit" id="btn-add-cloud-link"
+                    onclick="openCloudLinkModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      style="width:14px;height:14px">
                       <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
                       <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
                     </svg>Enlazar Archivo
