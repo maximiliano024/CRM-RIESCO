@@ -504,6 +504,16 @@ async function openProjectModal(projectId = null, defaultStage = null) {
   APP.coverDataUrl = null;
   resetCoverUI();
 
+  // Dynamic categories
+  const normName = (APP.currentUser?.name || '').trim().toLowerCase();
+  const isMax = normName === 'maximiliano domínguez' || normName.includes('maximiliano');
+  const catHtml = Object.entries(CATEGORIES)
+    .filter(([k]) => isMax || k !== 'otros')
+    .map(([k, v]) => `<option value="${k}">${v.icon} ${v.label}</option>`)
+    .join('');
+  const catSelect = $('#input-category');
+  if (catSelect) catSelect.innerHTML = catHtml;
+
   // Populate client dropdown
   const [clients, users] = await Promise.all([getClients(), getUsers()]);
   const sel = $('#input-client');
