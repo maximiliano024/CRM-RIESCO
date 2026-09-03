@@ -205,14 +205,25 @@ function applyAccessFilters(items, type) {
 
     if (!currentUser) return items;
 
-    // Si el usuario es visualizador o admin, ver todo
+    const userName = (currentUser.name || '').trim().toLowerCase();
+    const isMax = userName === 'maximiliano domínguez' || userName.includes('maximiliano');
+
+    // SEGURIDAD: Proyectos de categoría 'otros' SOLO pueden ser vistos por Maximiliano
+    if (type === 'projects' && !isMax) {
+        items = items.filter(p => p.category !== 'otros');
+    }
+
+    // Si el usuario es visualizador o admin, ver todo lo permitido
     if (currentUser.role !== 'normal') return items;
 
     // Si es usuario 'normal', solo devolver los ítems que le pertenecen
     if (type === 'projects') {
-        const userName = (currentUser.name || '').trim().toLowerCase();
         return items.filter(p => {
             if (p.id === 'INTERNO') return true;
+
+            // Si es Maximiliano y es de categoría 'otros', que lo vea siempre
+            if (isMax && p.category === 'otros') return true;
+
             const responsibles = Array.isArray(p.responsible) ? p.responsible : [];
             return responsibles.some(r => r.trim().toLowerCase() === userName);
         });
