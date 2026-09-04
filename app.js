@@ -44,19 +44,12 @@ const STAGES = {
     { id: 'evaluacion', label: 'Evaluación', color: '#8b5cf6' },
     { id: 'en-negociacion', label: 'En Negociación', color: '#f59e0b' },
     { id: 'cierre', label: 'Cierre', color: '#10b981' },
-  ],
-  otros: [
-    { id: 'en-contacto', label: 'En Contacto', color: '#3b82f6' },
-    { id: 'evaluacion', label: 'Evaluación', color: '#8b5cf6' },
-    { id: 'en-negociacion', label: 'En Negociación', color: '#f59e0b' },
-    { id: 'cierre', label: 'Cierre', color: '#10b981' },
   ]
 };
 
 const CATEGORIES = {
   legal: { label: 'Legal', icon: '⚖️', color: '#ea580c' },
   inmobiliario: { label: 'Inmobiliario', icon: '🏢', color: '#0891b2' },
-  otros: { label: 'Otros proyectos', icon: '📂', color: '#8b5cf6' },
 };
 
 // ── STORAGE: funciones async en supabase-storage.js ─────────
@@ -221,13 +214,6 @@ function bootApp(user) {
     if (g) g.style.display = 'none';
   }
 
-  // Ensure 'otros' is only available to Maximiliano
-  const normName = (user.name || '').trim().toLowerCase();
-  if (normName !== 'maximiliano domínguez' && !normName.includes('maximiliano')) {
-    const gOtros = $('#nav-group-otros');
-    if (gOtros) gOtros.style.display = 'none';
-  }
-
   // Event listener for Pipeline user filter
   $$('#pipeline-user-filter .btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -303,14 +289,6 @@ async function showView(viewId, title, category) {
     $('#nav-legal-tareas')?.classList.add('active');
   } else if (viewId === 'ideas' && category === 'inmobiliario') {
     $('#nav-inmo-ideas')?.classList.add('active');
-  } else if (viewId === 'pipeline' && category === 'otros') {
-    $('#nav-otros-pipeline')?.classList.add('active');
-  } else if (viewId === 'projects' && category === 'otros') {
-    $('#nav-otros-projects')?.classList.add('active');
-  } else if (viewId === 'tareas' && category === 'otros') {
-    $('#nav-otros-tareas')?.classList.add('active');
-  } else if (viewId === 'ideas' && category === 'otros') {
-    $('#nav-otros-ideas')?.classList.add('active');
   } else if (viewId === 'finished-projects') {
     $('#nav-finished-projects')?.classList.add('active');
   } else if (viewId === 'archived-projects') {
@@ -503,16 +481,6 @@ async function openProjectModal(projectId = null, defaultStage = null) {
   APP.editingProjectId = projectId;
   APP.coverDataUrl = null;
   resetCoverUI();
-
-  // Dynamic categories
-  const normName = (APP.currentUser?.name || '').trim().toLowerCase();
-  const isMax = normName === 'maximiliano domínguez' || normName.includes('maximiliano');
-  const catHtml = Object.entries(CATEGORIES)
-    .filter(([k]) => isMax || k !== 'otros')
-    .map(([k, v]) => `<option value="${k}">${v.icon} ${v.label}</option>`)
-    .join('');
-  const catSelect = $('#input-category');
-  if (catSelect) catSelect.innerHTML = catHtml;
 
   // Populate client dropdown
   const [clients, users] = await Promise.all([getClients(), getUsers()]);
